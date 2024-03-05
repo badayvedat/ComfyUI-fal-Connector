@@ -51,9 +51,8 @@ const processPrompt = async (prompt) => {
 api.addEventListener("executed-fal", async ({ detail }) => {
     const files = detail.files;
     const originalMessage = detail.original_message;
-    console.log("files", files);
 
-    api.fetchApi("/fal/download", { method: "POST", body: JSON.stringify({ files: files }), headers: { "Content-Type": "application/json" } });
+    // api.fetchApi("/fal/download", { method: "POST", body: JSON.stringify({ files: files }), headers: { "Content-Type": "application/json" } });
     api.socket.dispatchEvent(new MessageEvent("message", { data: originalMessage }));
 });
 
