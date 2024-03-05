@@ -54,7 +54,6 @@ api.addEventListener("executed-fal", async ({ detail }) => {
     console.log("files", files);
 
     api.fetchApi("/fal/download", { method: "POST", body: JSON.stringify({ files: files }), headers: { "Content-Type": "application/json" } });
-    console.log("original message", originalMessage);
     api.socket.dispatchEvent(new MessageEvent("message", { data: originalMessage }));
 });
 

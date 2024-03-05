@@ -1,4 +1,4 @@
-const FAL_KEY = "";
+const FAL_KEY = "your_fal_key_here";
 const APPLICATION_NAME = "fal-ai/comfy-server";
 
 export {
