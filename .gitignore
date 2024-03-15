@@ -159,6 +159,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-js/fal-env.js
+fal-config.ini
 
 .DS_Store
