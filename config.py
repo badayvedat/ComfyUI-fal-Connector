@@ -27,4 +27,11 @@ def get_headers():
 
 def set_fal_credentials():
     config = get_fal_config()
-    os.environ["FAL_KEY"] = config["fal"]["api_key"]
+    api_key = config["fal"]["api_key"]
+    os.environ["FAL_KEY"] = api_key
+
+    # Backwards compatibility
+    key_id, key_secret = api_key.split(":")
+    os.environ["FAL_KEY_ID"] = key_id
+    os.environ["FAL_KEY_SECRET"] = key_secret
+
