@@ -17,3 +17,8 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+## TODO
+- [] Fix streaming response shutdown
+- [] Easier deployment procedure
+- [] Cache file upload

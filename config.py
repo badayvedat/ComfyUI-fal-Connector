@@ -34,4 +34,3 @@ def set_fal_credentials():
     key_id, key_secret = api_key.split(":")
     os.environ["FAL_KEY_ID"] = key_id
     os.environ["FAL_KEY_SECRET"] = key_secret
-
