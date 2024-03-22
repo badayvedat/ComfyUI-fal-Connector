@@ -88,13 +88,13 @@ const queuePrompt = async () => {
 };
 
 
-api.addEventListener("fal-execution-time", async ({ detail }) => {
-  const elem = document.getElementById("fal-execution-took-label");
-  if (!elem || !detail.end_to_end) {
+api.addEventListener("fal-info", async ({ detail }) => {
+  const elem = document.getElementById("fal-info-label");
+  if (!elem || !detail.message) {
     return;
   }
 
-  elem.textContent = `Execution took: ${parseFloat(detail.end_to_end).toFixed(2)}s`;
+  elem.textContent = `${detail.message}`;
   elem.style.display = "block";
 });
 
@@ -115,15 +115,15 @@ const registerFalConnectButton = async () => {
 
 }
 
-const registerFalExecutionTookLabel = async () => {
-  const executionTookLabel = document.createElement("label");
-  executionTookLabel.id = "fal-execution-took-label";
-  executionTookLabel.style.display = "none";
-  executionTookLabel.style.margin = "0.5em auto 0";
+const registerFalInfoLabel = async () => {
+  const infoLabel = document.createElement("label");
+  infoLabel.id = "fal-info-label";
+  infoLabel.style.display = "none";
+  infoLabel.style.margin = "0.5em auto 0";
 
   const queue_prompt_button = document.getElementById("queue-button");
   const options_menu = queue_prompt_button.parentElement;
-  options_menu.insertBefore(executionTookLabel, queue_prompt_button);
+  options_menu.insertBefore(infoLabel, queue_prompt_button);
 }
 
 const hideUnusedElements = async () => {
@@ -158,7 +158,7 @@ app.registerExtension({
   name: "Comfy.falConnector",
   async setup() {
     await registerFalConnectButton();
-    await registerFalExecutionTookLabel();
+    await registerFalInfoLabel();
     await hideUnusedElements();
     await showSaveAPIFormatButton();
   },

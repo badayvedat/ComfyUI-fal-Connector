@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any
-
+import functools
 import httpx
 from aiohttp import web
 from fal.toolkit import File
@@ -33,12 +33,27 @@ async def get_comfy_error_response(
     }
 
 
+@functools.lru_cache(maxsize=128)
+def _upload_file(file_path: Path, md5_hash: str):
+    return File.from_path(file_path).url
+
+def _calculate_file_hash(file_path: Path):
+    import hashlib
+
+    with open(file_path, "rb") as f:
+        file_hash = hashlib.md5(f.read()).hexdigest()
+    return file_hash
+
+def upload_file(file_path: Path):
+    file_hash = _calculate_file_hash(file_path)
+    return _upload_file(file_path, file_hash)
+
 async def upload_file_load_image(node_id, node_data):
     import folder_paths
 
     image = node_data["inputs"]["image"]
     image_path = Path(folder_paths.get_annotated_filepath(image))
-    fal_file_url = File.from_path(image_path).url
+    fal_file_url = upload_file(image_path)
     return {"key": [node_id, "inputs", "image"], "url": fal_file_url}
 
 
@@ -47,7 +62,7 @@ async def upload_file_load_video(node_id, node_data):
 
     video = node_data["inputs"]["video"]
     video_path = Path(folder_paths.get_annotated_filepath(video))
-    fal_file_url = File.from_path(video_path).url
+    fal_file_url = upload_file(video_path)
     return {"key": [node_id, "inputs", "video"], "url": fal_file_url}
 
 
@@ -74,7 +89,9 @@ async def execute_prompt(request):
     client_id = prompt_data["client_id"]
 
     try:
+        await emit_event("fal-info", {"message": "Uploading files"}, client_id)
         fal_files = await upload_input_files(api_workflow)
+        await emit_event("fal-info", {"message": "Files uploaded"}, client_id)
     except Exception as err:
         error_response = await get_comfy_error_response(
             "file_upload_failed",
@@ -96,6 +113,7 @@ async def execute_prompt(request):
 
     async with httpx.AsyncClient() as client:
         try:
+            await emit_event("fal-info", {"message": "Executing the workflow"}, client_id)
             await emit_events(client, payload, client_id)
             return web.json_response(status=200)
 
