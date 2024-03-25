@@ -170,7 +170,7 @@ const saveComfyPrompt = async (comfyPrompt) => {
   }, 0);
 };
 
-const showSaveFalFormatButton = async () => {
+const registerSaveFalFormatButton = async () => {
   const falFormatButton = document.createElement("button");
   falFormatButton.id = "save-fal-format-button";
   falFormatButton.textContent = "Save as fal format";
@@ -178,8 +178,25 @@ const showSaveFalFormatButton = async () => {
     "linear-gradient(90deg, #192A51 0%, #6B3E9B 50%, #0099FF 100%)";
   falFormatButton.style.display = "inline-block";
   falFormatButton.style.color = "#fefefe";
-
   falFormatButton.style.display = "block";
+
+  const closeButton = app.ui.dialog.textElement.nextSibling;
+  const saveButton = $el("button", {
+    id: "comfy-dialog-save-button",
+    type: "button",
+    textContent: "Save",
+    display: "none",
+    onclick: () => saveComfyPrompt(json),
+  });
+
+  closeButton.before(saveButton);
+
+  const originalCloseHandler = closeButton.onclick;
+  closeButton.onclick = () => {
+    saveButton.style.display = "none";
+    originalCloseHandler();
+  };
+
   falFormatButton.onclick = async () => {
     try {
       const comfyPrompt = await app.graphToPrompt();
@@ -195,14 +212,8 @@ const showSaveFalFormatButton = async () => {
       }
       const responseJSON = await response.json();
       const json = JSON.stringify(responseJSON, null, 2);
-      const closeButton = app.ui.dialog.textElement.nextSibling;
-      const saveButton = $el("button", {
-        type: "button",
-        textContent: "Save",
-        onclick: () => saveComfyPrompt(json),
-      });
-      closeButton.before(saveButton);
 
+      saveButton.style.display = "inline-block";
       app.ui.dialog.show(
         $el("div", {}, [
           $el("pre", {
@@ -233,6 +244,6 @@ app.registerExtension({
     await registerFalConnectButton();
     await registerFalInfoLabel();
     await hideUnusedElements();
-    await showSaveFalFormatButton();
+    await registerSaveFalFormatButton();
   },
 });
