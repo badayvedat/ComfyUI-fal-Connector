@@ -1,7 +1,8 @@
+import functools
 import json
 from pathlib import Path
 from typing import Any
-import functools
+
 import httpx
 from aiohttp import web
 from fal.toolkit import File
@@ -37,6 +38,7 @@ async def get_comfy_error_response(
 def _upload_file(file_path: Path, md5_hash: str):
     return File.from_path(file_path).url
 
+
 def _calculate_file_hash(file_path: Path):
     import hashlib
 
@@ -44,37 +46,53 @@ def _calculate_file_hash(file_path: Path):
         file_hash = hashlib.md5(f.read()).hexdigest()
     return file_hash
 
+
 def upload_file(file_path: Path):
     file_hash = _calculate_file_hash(file_path)
     return _upload_file(file_path, file_hash)
 
-async def upload_file_load_image(node_id, node_data):
+
+async def upload_file_load_image(node_id, node_data, dry_run=False):
     import folder_paths
 
     image = node_data["inputs"]["image"]
     image_path = Path(folder_paths.get_annotated_filepath(image))
-    fal_file_url = upload_file(image_path)
+
+    fal_file_url = "example_url"
+    if not dry_run:
+        fal_file_url = upload_file(image_path)
+
     return {"key": [node_id, "inputs", "image"], "url": fal_file_url}
 
 
-async def upload_file_load_video(node_id, node_data):
+async def upload_file_load_video(node_id, node_data, dry_run=False):
     import folder_paths
 
     video = node_data["inputs"]["video"]
     video_path = Path(folder_paths.get_annotated_filepath(video))
-    fal_file_url = upload_file(video_path)
+
+    fal_file_url = "example_url"
+    if not dry_run:
+        fal_file_url = upload_file(video_path)
+
     return {"key": [node_id, "inputs", "video"], "url": fal_file_url}
 
 
-async def upload_input_files(prompt_data: dict[str, dict[str, Any]]):
+async def upload_input_files(
+    prompt_data: dict[str, dict[str, Any]], dry_run: bool = False
+):
     file_urls = []
 
     for node_id, node_data in prompt_data.items():
         if node_data["class_type"] == "LoadImage":
-            file_data = await upload_file_load_image(node_id, node_data)
+            file_data = await upload_file_load_image(
+                node_id, node_data, dry_run=dry_run
+            )
             file_urls.append(file_data)
         elif node_data["class_type"] == "VHS_LoadVideo":
-            file_data = await upload_file_load_video(node_id, node_data)
+            file_data = await upload_file_load_video(
+                node_id, node_data, dry_run=dry_run
+            )
             file_urls.append(file_data)
 
     return file_urls
@@ -84,36 +102,25 @@ async def upload_input_files(prompt_data: dict[str, dict[str, Any]]):
 async def execute_prompt(request):
     prompt_data = await request.json()
 
-    api_workflow = prompt_data["output"]
-    ui_workflow = prompt_data["workflow"]
     client_id = prompt_data["client_id"]
 
     try:
-        await emit_event("fal-info", {"message": "Uploading files"}, client_id)
-        fal_files = await upload_input_files(api_workflow)
-        await emit_event("fal-info", {"message": "Files uploaded"}, client_id)
-    except Exception as err:
-        error_response = await get_comfy_error_response(
-            "file_upload_failed",
-            "File upload failed",
-            str(err),
-        )
+        payload = await build_payload(prompt_data)
+    except ComfyClientError as err:
+        error_data = err.args[0]
         return web.json_response(
             status=400,
-            data=error_response,
+            data=error_data,
         )
-
-    payload = {
-        "prompt": api_workflow,
-        "extra_data": {"extra_pnginfo": ui_workflow, "fal_files": fal_files},
-    }
 
     with open("payload.json", "w") as f:
         json.dump(payload, f, indent=4)
 
     async with httpx.AsyncClient() as client:
         try:
-            await emit_event("fal-info", {"message": "Executing the workflow"}, client_id)
+            await emit_event(
+                "fal-info", {"message": "Executing the workflow"}, client_id
+            )
             await emit_events(client, payload, client_id)
             return web.json_response(status=200)
 
@@ -154,6 +161,46 @@ async def execute_prompt(request):
                 status=500,
                 data=error_response,
             )
+
+
+@PromptServer.instance.routes.post("/fal/save")
+async def save_prompt(request):
+    prompt_data = await request.json()
+
+    try:
+        payload = await build_payload(prompt_data, dry_run=True)
+    except ComfyClientError as err:
+        error_data = err.args[0]
+        return web.json_response(
+            status=400,
+            data=error_data,
+        )
+
+    payload["extra_data"].pop("extra_pnginfo", None)
+
+    return web.json_response(status=200, data=payload)
+
+
+async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = False):
+    api_workflow = prompt_data["output"]
+    ui_workflow = prompt_data["workflow"]
+
+    try:
+        fal_files = await upload_input_files(api_workflow, dry_run=dry_run)
+    except Exception as err:
+        error_response = await get_comfy_error_response(
+            "file_upload_failed",
+            "File upload failed",
+            str(err),
+        )
+        raise ComfyClientError({"code": 400, "error": error_response})
+
+    payload = {
+        "prompt": api_workflow,
+        "extra_data": {"extra_pnginfo": ui_workflow, "fal_files": fal_files},
+    }
+
+    return payload
 
 
 async def emit_events(client: httpx.AsyncClient, payload: dict, client_id: str):

@@ -21,4 +21,4 @@ python main.py
 ## TODO
 - [] Fix streaming response shutdown
 - [] Easier deployment procedure
-- [] Cache file upload
+- [] How to use payload format
