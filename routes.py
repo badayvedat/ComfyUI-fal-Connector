@@ -102,15 +102,28 @@ async def upload_input_files(
 async def execute_prompt(request):
     prompt_data = await request.json()
 
-    client_id = prompt_data["client_id"]
+    try:
+        client_id = prompt_data["clienst_id"]
+    except KeyError:
+        error_response = await get_comfy_error_response(
+            type="client_id_missing",
+            message="Client ID is missing",
+            details="Client is not initialized yet. Please try again in a few seconds.",
+        )
+        return web.json_response(
+            status=400,
+            data=error_response,
+        )
 
     try:
         payload = await build_payload(prompt_data)
     except ComfyClientError as err:
         error_data = err.args[0]
+        error_code = error_data.get("code", 500)
+        error_message = error_data.get("error", "An unexpected error occurred")
         return web.json_response(
-            status=400,
-            data=error_data,
+            status=error_code,
+            data=error_message,
         )
 
     with open("payload.json", "w") as f:
@@ -171,9 +184,11 @@ async def save_prompt(request):
         payload = await build_payload(prompt_data, dry_run=True)
     except ComfyClientError as err:
         error_data = err.args[0]
+        error_code = error_data.get("code", 500)
+        error_message = error_data.get("error", "An unexpected error occurred")
         return web.json_response(
-            status=400,
-            data=error_data,
+            status=error_code,
+            data=error_message,
         )
 
     payload["extra_data"].pop("extra_pnginfo", None)

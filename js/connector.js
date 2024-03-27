@@ -34,6 +34,21 @@ const formatPromptError = async (error) => {
 
 // const formatWorkflowAPIFormat = async (workflow) => {
 
+const hideSaveButton = async () => {
+  const saveButton = document.getElementById("comfy-dialog-save-button");
+  if (saveButton) {
+    saveButton.style.display = "none";
+  }
+}
+
+const showSaveButton = async (content) => {
+  const saveButton = document.getElementById("comfy-dialog-save-button");
+  if (saveButton && content) {
+    saveButton._prompt_content = content;
+    saveButton.style.display = "inline-block";
+  }
+}
+
 const queuePrompt = async () => {
   // Only have one action process the items so each one gets a unique seed correctly
   if (processingQueue) {
@@ -74,6 +89,7 @@ const queuePrompt = async () => {
           });
       });
     } catch (error) {
+      hideSaveButton();
       const formattedError = await formatPromptError(error);
       app.ui.dialog.show(formattedError);
       if (error.response) {
@@ -146,15 +162,15 @@ const hideUnusedElements = async () => {
   }
 };
 
-const saveComfyPrompt = async (comfyPrompt) => {
+const saveComfyPrompt = async (promptJson) => {
   let filename = "fal_api_workflow.json";
   filename = prompt("Save workflow (API) as:", filename);
   if (!filename) return;
   if (!filename.toLowerCase().endsWith(".json")) {
     filename += ".json";
   }
-  const responseJSON = await res.json();
-  const json = JSON.stringify(responseJSON, null, 2);
+
+  const json = JSON.stringify(promptJson, null, 2);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = $el("a", {
@@ -186,14 +202,18 @@ const registerSaveFalFormatButton = async () => {
     type: "button",
     textContent: "Save",
     display: "none",
-    onclick: () => saveComfyPrompt(json),
   });
+
+  saveButton._prompt_content = null;
+  saveButton.onclick = () => {
+    saveComfyPrompt(saveButton._prompt_content);
+  }
 
   closeButton.before(saveButton);
 
   const originalCloseHandler = closeButton.onclick;
   closeButton.onclick = () => {
-    saveButton.style.display = "none";
+    hideSaveButton();
     originalCloseHandler();
   };
 
@@ -213,7 +233,7 @@ const registerSaveFalFormatButton = async () => {
       const responseJSON = await response.json();
       const json = JSON.stringify(responseJSON, null, 2);
 
-      saveButton.style.display = "inline-block";
+      showSaveButton(responseJSON);
       app.ui.dialog.show(
         $el("div", {}, [
           $el("pre", {
@@ -225,6 +245,7 @@ const registerSaveFalFormatButton = async () => {
         ]),
       );
     } catch (error) {
+      hideSaveButton();
       const formattedError = await formatPromptError(error);
       app.ui.dialog.show(formattedError);
       if (error.response) {
