@@ -103,7 +103,7 @@ async def execute_prompt(request):
     prompt_data = await request.json()
 
     try:
-        client_id = prompt_data["clienst_id"]
+        client_id = prompt_data["client_id"]
     except KeyError:
         error_response = await get_comfy_error_response(
             type="client_id_missing",
