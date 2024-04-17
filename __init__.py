@@ -5,6 +5,7 @@ import folder_paths
 
 from .config import set_fal_credentials
 from .routes import *
+from .nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
 COMFY_PATH = Path(os.path.dirname(folder_paths.__file__))
 CUSTOM_NODES_PATH = COMFY_PATH / "custom_nodes"
@@ -13,7 +14,5 @@ FAL_JS_PATH = FAL_CONNECTOR_PATH / "js"
 
 WEB_DIRECTORY = "js"
 
-NODE_CLASS_MAPPINGS = {}
-NODE_DISPLAY_NAME_MAPPINGS = {}
 
 set_fal_credentials()

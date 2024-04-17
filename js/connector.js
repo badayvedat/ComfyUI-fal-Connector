@@ -39,7 +39,7 @@ const hideSaveButton = async () => {
   if (saveButton) {
     saveButton.style.display = "none";
   }
-}
+};
 
 const showSaveButton = async (content) => {
   const saveButton = document.getElementById("comfy-dialog-save-button");
@@ -47,7 +47,7 @@ const showSaveButton = async (content) => {
     saveButton._prompt_content = content;
     saveButton.style.display = "inline-block";
   }
-}
+};
 
 const queuePrompt = async () => {
   // Only have one action process the items so each one gets a unique seed correctly
@@ -207,7 +207,7 @@ const registerSaveFalFormatButton = async () => {
   saveButton._prompt_content = null;
   saveButton.onclick = () => {
     saveComfyPrompt(saveButton._prompt_content);
-  }
+  };
 
   closeButton.before(saveButton);
 
@@ -259,6 +259,170 @@ const registerSaveFalFormatButton = async () => {
   falConnectButton.after(falFormatButton);
 };
 
+// Based on https://github.com/comfyanonymous/ComfyUI/blob/4b9005e949224782236a8b914eae48bc503f1f18/web/extensions/core/widgetInputs.js
+const CONVERTED_TYPE = "converted-widget";
+
+function getWidgetType(config) {
+  // Special handling for COMBO so we restrict links based on the entries
+  let type = config[0];
+  if (type instanceof Array) {
+    type = "COMBO";
+  }
+  return { type };
+}
+
+// 'combo' is a problem because it has a list of options rendered in the widget
+// and has a constant value obtained from the py class itself.
+// we can modify to render a combo widget with the same options as the original
+// however, backend will not be able to get the value from the widget itself
+// because the py class will always return the default value
+// const VALID_TYPES = ["STRING", "combo", "number", "BOOLEAN"];
+
+const VALID_TYPES = ["STRING", "number", "BOOLEAN"];
+const INVALID_OPTIONS = ["control_after_generate"];
+
+const FAL_INPUT_NODES = [
+  "IntegerInput_fal",
+  "FloatInput_fal",
+  "BooleanInput_fal",
+  "StringInput_fal",
+  // "ComboInput_fal",
+];
+
+// create a map to keep track of the number of converted widgets
+const convertedWidgetsMap = new Map();
+
+function getConfig(widgetName) {
+  const { nodeData } = this.constructor;
+  return (
+    nodeData?.input?.required[widgetName] ??
+    nodeData?.input?.optional?.[widgetName]
+  );
+}
+
+function isConvertableWidget(widget, config) {
+  const isValid =
+    VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0]);
+  const isUnvalidOption = INVALID_OPTIONS.includes(widget.name);
+  const isFalNode = FAL_INPUT_NODES.includes(widget.type);
+
+  return (
+    isValid && !isUnvalidOption && !widget.options?.forceInput && !isFalNode
+  );
+}
+
+function hideWidget(node, widget, suffix = "") {
+  if (widget.type?.startsWith(CONVERTED_TYPE)) return;
+  widget.origType = widget.type;
+  widget.origComputeSize = widget.computeSize;
+  widget.origSerializeValue = widget.serializeValue;
+  widget.computeSize = () => [0, -4]; // -4 is due to the gap litegraph adds between widgets automatically
+  widget.type = CONVERTED_TYPE + suffix;
+  widget.serializeValue = () => {
+    // Prevent serializing the widget if we have no input linked
+    if (!node.inputs) {
+      return undefined;
+    }
+    let node_input = node.inputs.find((i) => i.widget?.name === widget.name);
+
+    if (!node_input || !node_input.link) {
+      return undefined;
+    }
+    return widget.origSerializeValue
+      ? widget.origSerializeValue()
+      : widget.value;
+  };
+
+  // Hide any linked widgets, e.g. seed+seedControl
+  if (widget.linkedWidgets) {
+    for (const w of widget.linkedWidgets) {
+      hideWidget(node, w, ":" + widget.name);
+    }
+  }
+}
+
+function convertTofalInput(node, widget, config) {
+  hideWidget(node, widget);
+  let widgetName = widget.name;
+
+  const nodeType = node.type.toLowerCase();
+  widgetName = `${nodeType}_${widgetName}`;
+
+  const count = convertedWidgetsMap.has(widgetName)
+    ? convertedWidgetsMap.get(widgetName) + 1
+    : 0;
+  convertedWidgetsMap.set(widgetName, count);
+
+  if (count > 0) {
+    widgetName = `${widgetName}_${count}`;
+  }
+
+  const { type } = getWidgetType(config);
+
+  // Add input and store widget config for creating on primitive node
+  const sz = node.size;
+  node.addInput(widget.name, type, {
+    widget: { name: widget.name, config },
+  });
+
+  for (const widget of node.widgets) {
+    widget.last_y += LiteGraph.NODE_SLOT_HEIGHT;
+  }
+
+  // Restore original size but grow if needed
+  node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])]);
+
+  const originalValue = widget.value;
+
+  let newNode = null;
+  if (type === "COMBO") {
+    const widgetOptions = widget?.options?.values || [];
+    newNode = LiteGraph.createNode("ComboInput_fal");
+
+    newNode.widgets[1].value = originalValue;
+    newNode.widgets[1].options.values = widgetOptions;
+
+    newNode.widgets[2].value = widgetOptions[0];
+    newNode.widgets[2].options.values = widgetOptions;
+  } else if (type === "INT") {
+    newNode = LiteGraph.createNode("IntegerInput_fal");
+
+    newNode.widgets[1].value = originalValue;
+
+    const minValue = widget?.options?.min;
+    const maxValue = widget?.options?.max;
+    newNode.widgets[2].value = config[1]?.min ?? minValue;
+    newNode.widgets[3].value = config[1]?.max ?? maxValue;
+    newNode.widgets[4].value = config[1]?.step ?? 1;
+  } else if (type === "FLOAT") {
+    newNode = LiteGraph.createNode("FloatInput_fal");
+
+    newNode.widgets[1].value = originalValue;
+
+    const minValue = widget?.options?.min;
+    const maxValue = widget?.options?.max;
+    newNode.widgets[2].value = config[1]?.min ?? minValue;
+    newNode.widgets[3].value = config[1]?.max ?? maxValue;
+    newNode.widgets[4].value = config[1]?.step ?? 0.1;
+  } else if (type === "BOOLEAN") {
+    newNode = LiteGraph.createNode("BooleanInput_fal");
+    newNode.widgets[1].value = originalValue;
+  } else if (type === "STRING") {
+    newNode = LiteGraph.createNode("StringInput_fal");
+    newNode.widgets[1].value = originalValue;
+  }
+
+  if (!newNode) {
+    return;
+  }
+
+  newNode.widgets[0].value = widgetName;
+  app.graph.add(newNode);
+
+  // connect nodes
+  newNode.connect(0, node, node.inputs.length - 1);
+}
+
 app.registerExtension({
   name: "Comfy.falConnector",
   async setup() {
@@ -267,4 +431,49 @@ app.registerExtension({
     await hideUnusedElements();
     await registerSaveFalFormatButton();
   },
+  async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    nodeType.prototype.getExtraMenuOptions = function (_, options) {
+      if (this.widgets) {
+        let toInput = [];
+        let toWidget = [];
+
+        for (const widget of this.widgets) {
+          if (widget.options?.forceInput) {
+            continue;
+          }
+          if (widget.type !== CONVERTED_TYPE) {
+            const config = getConfig.call(this, widget.name) ?? [
+              widget.type,
+              widget.options || {},
+            ];
+            if (isConvertableWidget(widget, config)) {
+              toInput.push({
+                content: `Convert ${widget.name} to fal input`,
+                className: "litemenu-entry-fal",
+                callback: () => convertTofalInput(this, widget, config),
+              });
+            }
+          }
+        }
+        if (toInput.length) {
+          options.push(...toInput, null);
+        }
+
+        if (toWidget.length) {
+          options.push(...toWidget, null);
+        }
+      }
+    };
+  },
 });
+
+var styleElement = document.createElement("style");
+const cssCode = `
+.litemenu-entry-fal
+{
+    color: #fefefe;
+    background: linear-gradient(90deg, #192A51 0%, #6B3E9B 50%, #0099FF 100%);
+}
+`;
+styleElement.innerHTML = cssCode;
+document.head.appendChild(styleElement);

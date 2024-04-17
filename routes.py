@@ -10,6 +10,7 @@ from httpx_sse import SSEError, aconnect_sse
 from server import PromptServer
 
 from .config import get_fal_endpoint, get_headers
+from .nodes import NODE_CLASS_MAPPINGS as FAL_NODES
 
 
 class ComfyClientError(Exception):
@@ -126,8 +127,6 @@ async def execute_prompt(request):
             data=error_message,
         )
 
-    with open("payload.json", "w") as f:
-        json.dump(payload, f, indent=4)
 
     async with httpx.AsyncClient() as client:
         try:
@@ -209,13 +208,119 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
             str(err),
         )
         raise ComfyClientError({"code": 400, "error": error_response})
+    
+    fal_inputs = {}
+    fal_inputs_dev_info = {}
+
+
+    async for _, _, api_node_data, ui_node_data in get_node_data(api_workflow, ui_workflow):
+        api_inputs, _ = await get_node_inputs(api_node_data, ui_node_data)
+        api_inputs_counter = {}
+
+        for _, api_input_data in api_inputs.items():
+            if not isinstance(api_input_data, list):
+                continue
+
+            upstream_node_id = api_input_data[0]
+            upstream_node_data = api_workflow[upstream_node_id]
+            upstream_node_inputs = upstream_node_data["inputs"]
+            upstream_node_class_type = upstream_node_data["class_type"]
+
+            if upstream_node_class_type not in FAL_NODES:
+                continue
+
+            input_name = upstream_node_inputs["name"]
+
+            if input_name in api_inputs_counter:
+                previous_upstream_node_id, previous_upstream_node_class_type = api_inputs_counter[input_name]
+
+                error_response = await get_comfy_error_response(
+                    "duplicate_input_name",
+                    "Duplicate input name",
+                    details=f"Found duplicate input name '{input_name}' in the workflow",
+                    node_errors={
+                        previous_upstream_node_id: {
+                            "class_type": previous_upstream_node_class_type,
+                            "errors": [{"message": f"Duplicate input name '{input_name}'", "details": ""}],
+                        },
+                        upstream_node_id: {
+                            "class_type": upstream_node_class_type,
+                            "errors": [{"message": f"Duplicate input name '{input_name}'", "details": ""}],
+                        },
+                    },
+                 )
+                raise ComfyClientError(
+                    {
+                        "code": 400,
+                        "error": error_response,
+                    }
+                )
+            
+            api_inputs_counter[input_name] = (upstream_node_id, upstream_node_class_type)
+      
+            if upstream_node_class_type == "ComboInput_fal":
+                input_key = [upstream_node_id, "inputs", "value"]
+                fal_inputs[input_name] = upstream_node_inputs["value"]
+
+                fal_inputs_dev_info[input_name] = {
+                    "key": input_key,
+                }
+
+            if upstream_node_class_type == "IntegerInput_fal":
+                input_key = [upstream_node_id, "inputs", "number"]
+                fal_inputs[input_name] = upstream_node_inputs["number"]
+
+                fal_inputs_dev_info[input_name] = {
+                    "key": input_key,
+                }
+
+            if upstream_node_class_type == "FloatInput_fal":
+                input_key = [upstream_node_id, "inputs", "number"]
+                fal_inputs[input_name] = upstream_node_inputs["number"]
+
+                fal_inputs_dev_info[input_name] = {
+                    "key": input_key,
+                }
+
+            if upstream_node_class_type == "BooleanInput_fal":
+                input_key = [upstream_node_id, "inputs", "value"]
+                fal_inputs[input_name] = upstream_node_inputs["value"]
+
+                fal_inputs_dev_info[input_name] = {
+                    "key": input_key,
+                }
+
 
     payload = {
         "prompt": api_workflow,
-        "extra_data": {"extra_pnginfo": ui_workflow, "fal_files": fal_files},
+        "extra_data": {"extra_pnginfo": ui_workflow},
+        "fal_inputs_dev_info": fal_inputs_dev_info,
+        "fal_files": fal_files,
+        "fal_inputs": fal_inputs,
     }
 
     return payload
+
+
+async def get_node_data(api_workflow: dict[str, Any], ui_workflow: dict[str, Any]):
+    ui_nodes = {str(node["id"]): node for node in ui_workflow["nodes"]}
+
+    for node_id, api_node_data in api_workflow.items():
+        ui_node_data = ui_nodes[node_id]
+        node_class_type = api_node_data["class_type"]
+        yield node_id, node_class_type, api_node_data, ui_node_data
+    
+
+async def get_node_inputs(api_node_data: dict[str, Any], ui_node_data: dict[str, Any]):
+    api_inputs = {input: input_data for input, input_data in api_node_data.get("inputs", {}).items()}
+
+    ui_inputs = {
+        input_data["name"]: input_data["widget"]
+        for input_data in ui_node_data.get("inputs",[])
+        if "widget" in input_data
+    }
+
+    return api_inputs, ui_inputs
 
 
 async def emit_events(client: httpx.AsyncClient, payload: dict, client_id: str):
