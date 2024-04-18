@@ -333,7 +333,7 @@ async def emit_events(client: httpx.AsyncClient, payload: dict, client_id: str):
         url=fal_endpoint,
         json=payload,
         headers=headers,
-        timeout=60,
+        timeout=120,
     ) as event_source:
         try:
             async for event in event_source.aiter_sse():
