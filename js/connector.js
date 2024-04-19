@@ -114,6 +114,8 @@ api.addEventListener("fal-info", async ({ detail }) => {
   elem.style.display = "block";
 });
 
+api.addEventListener("fal-node-timings", async ({ detail }) => {});
+
 const registerFalConnectButton = async () => {
   const falConnectButton = document.createElement("button");
   falConnectButton.id = "fal-connect-button";
