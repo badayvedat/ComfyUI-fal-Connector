@@ -1,6 +1,7 @@
 import string
 import random
 
+
 class IntegerInput:
     @classmethod
     def INPUT_TYPES(cls):
@@ -8,8 +9,8 @@ class IntegerInput:
             "required": {
                 "name": ("STRING", {"default": f"int_{get_random_short_id()}"}),
                 "number": ("INT", {"default": 0}),
-                "min": ("INT", {"default": -2 ** 31}),
-                "max": ("INT", {"default": 2 ** 31 - 1}),
+                "min": ("INT", {"default": -(2**31)}),
+                "max": ("INT", {"default": 2**31 - 1}),
                 "step": ("INT", {"default": 1}),
             }
         }
@@ -20,6 +21,7 @@ class IntegerInput:
     def get_number(self, name, number, min, max, step):
         return (number,)
 
+
 class FloatInput:
     @classmethod
     def INPUT_TYPES(cls):
@@ -27,18 +29,17 @@ class FloatInput:
             "required": {
                 "name": ("STRING", {"default": f"float_{get_random_short_id()}"}),
                 "number": ("FLOAT", {"default": 0}),
-                "min": ("FLOAT", {"default": -float(2 ** 31)}),
-                "max": ("FLOAT", {"default": float(2 ** 31)}),
+                "min": ("FLOAT", {"default": -float(2**31)}),
+                "max": ("FLOAT", {"default": float(2**31)}),
                 "step": ("FLOAT", {"default": 0.1}),
             }
         }
-    
+
     RETURN_TYPES = ("FLOAT",)
     FUNCTION = "get_number"
 
     def get_number(self, name, number, min, max, step):
         return (number,)
-
 
 
 class BooleanInput:
@@ -81,8 +82,8 @@ class ComboInput:
         return {
             "required": {
                 "name": ("STRING", {"default": f"combo_{get_random_short_id()}"}),
-                "value": ([], ),
-                "options": ([], ),
+                "value": ([],),
+                "options": ([],),
             },
         }
 
@@ -90,10 +91,10 @@ class ComboInput:
     FUNCTION = "get_value"
 
     def get_value(self, name, value, options):
-        print('value:', value)
-        print('options:', options)
+        print("value:", value)
+        print("options:", options)
         return (value,)
-    
+
     @classmethod
     def VALIDATE_INPUTS(cls, value, options):
         return True
@@ -101,7 +102,8 @@ class ComboInput:
 
 def get_random_short_id():
     alphabet = string.ascii_lowercase + string.digits
-    return ''.join(random.choices(alphabet, k=8))
+    return "".join(random.choices(alphabet, k=8))
+
 
 NODE_CLASS_MAPPINGS = {
     "IntegerInput_fal": IntegerInput,

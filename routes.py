@@ -1,3 +1,4 @@
+from collections import defaultdict
 import functools
 import json
 from pathlib import Path
@@ -85,16 +86,22 @@ async def upload_input_files(
     file_urls = []
 
     for node_id, node_data in prompt_data.items():
-        if node_data["class_type"] == "LoadImage":
+        node_class_type = node_data["class_type"]
+        file_data = None
+
+        if node_class_type not in ["LoadImage", "VHS_LoadVideo"]:
+            continue
+
+        if node_class_type == "LoadImage":
             file_data = await upload_file_load_image(
                 node_id, node_data, dry_run=dry_run
             )
-            file_urls.append(file_data)
-        elif node_data["class_type"] == "VHS_LoadVideo":
+        elif node_class_type == "VHS_LoadVideo":
             file_data = await upload_file_load_video(
                 node_id, node_data, dry_run=dry_run
             )
-            file_urls.append(file_data)
+        file_data["class_type"] = node_class_type
+        file_urls.append(file_data)
 
     return file_urls
 
@@ -126,7 +133,6 @@ async def execute_prompt(request):
             status=error_code,
             data=error_message,
         )
-
 
     async with httpx.AsyncClient() as client:
         try:
@@ -200,6 +206,12 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
     ui_workflow = prompt_data["workflow"]
 
     try:
+        if not dry_run:
+            await emit_event(
+                "fal-info",
+                {"message": "Uploading input files"},
+                prompt_data["client_id"],
+            )
         fal_files = await upload_input_files(api_workflow, dry_run=dry_run)
     except Exception as err:
         error_response = await get_comfy_error_response(
@@ -208,12 +220,27 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
             str(err),
         )
         raise ComfyClientError({"code": 400, "error": error_response})
-    
+
     fal_inputs = {}
     fal_inputs_dev_info = {}
+    file_input_type_counter = defaultdict(int)
 
+    for file_data in fal_files:
+        file_input_class_name = file_data["class_type"].lower()
+        file_input_type_counter[file_input_class_name] += 1
 
-    async for _, _, api_node_data, ui_node_data in get_node_data(api_workflow, ui_workflow):
+        file_input_name = (
+            f"{file_input_class_name}_{file_input_type_counter[file_input_class_name]}"
+        )
+        fal_inputs[file_input_name] = file_data["url"]
+        fal_inputs_dev_info[file_input_name] = {
+            "key": file_data["key"],
+            "class_type": file_data["class_type"],
+        }
+
+    async for _, _, api_node_data, ui_node_data in get_node_data(
+        api_workflow, ui_workflow
+    ):
         api_inputs, _ = await get_node_inputs(api_node_data, ui_node_data)
         api_inputs_counter = {}
 
@@ -232,7 +259,10 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
             input_name = upstream_node_inputs["name"]
 
             if input_name in api_inputs_counter:
-                previous_upstream_node_id, previous_upstream_node_class_type = api_inputs_counter[input_name]
+                (
+                    previous_upstream_node_id,
+                    previous_upstream_node_class_type,
+                ) = api_inputs_counter[input_name]
 
                 error_response = await get_comfy_error_response(
                     "duplicate_input_name",
@@ -241,61 +271,61 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
                     node_errors={
                         previous_upstream_node_id: {
                             "class_type": previous_upstream_node_class_type,
-                            "errors": [{"message": f"Duplicate input name '{input_name}'", "details": ""}],
+                            "errors": [
+                                {
+                                    "message": f"Duplicate input name '{input_name}'",
+                                    "details": "",
+                                }
+                            ],
                         },
                         upstream_node_id: {
                             "class_type": upstream_node_class_type,
-                            "errors": [{"message": f"Duplicate input name '{input_name}'", "details": ""}],
+                            "errors": [
+                                {
+                                    "message": f"Duplicate input name '{input_name}'",
+                                    "details": "",
+                                }
+                            ],
                         },
                     },
-                 )
+                )
                 raise ComfyClientError(
                     {
                         "code": 400,
                         "error": error_response,
                     }
                 )
-            
-            api_inputs_counter[input_name] = (upstream_node_id, upstream_node_class_type)
-      
+
+            api_inputs_counter[input_name] = (
+                upstream_node_id,
+                upstream_node_class_type,
+            )
+
             if upstream_node_class_type == "ComboInput_fal":
                 input_key = [upstream_node_id, "inputs", "value"]
                 fal_inputs[input_name] = upstream_node_inputs["value"]
-
-                fal_inputs_dev_info[input_name] = {
-                    "key": input_key,
-                }
 
             if upstream_node_class_type == "IntegerInput_fal":
                 input_key = [upstream_node_id, "inputs", "number"]
                 fal_inputs[input_name] = upstream_node_inputs["number"]
 
-                fal_inputs_dev_info[input_name] = {
-                    "key": input_key,
-                }
-
             if upstream_node_class_type == "FloatInput_fal":
                 input_key = [upstream_node_id, "inputs", "number"]
                 fal_inputs[input_name] = upstream_node_inputs["number"]
-
-                fal_inputs_dev_info[input_name] = {
-                    "key": input_key,
-                }
 
             if upstream_node_class_type == "BooleanInput_fal":
                 input_key = [upstream_node_id, "inputs", "value"]
                 fal_inputs[input_name] = upstream_node_inputs["value"]
 
-                fal_inputs_dev_info[input_name] = {
-                    "key": input_key,
-                }
-
+            fal_inputs_dev_info[input_name] = {
+                "key": input_key,
+                "class_type": upstream_node_class_type,
+            }
 
     payload = {
         "prompt": api_workflow,
         "extra_data": {"extra_pnginfo": ui_workflow},
         "fal_inputs_dev_info": fal_inputs_dev_info,
-        "fal_files": fal_files,
         "fal_inputs": fal_inputs,
     }
 
@@ -309,14 +339,17 @@ async def get_node_data(api_workflow: dict[str, Any], ui_workflow: dict[str, Any
         ui_node_data = ui_nodes[node_id]
         node_class_type = api_node_data["class_type"]
         yield node_id, node_class_type, api_node_data, ui_node_data
-    
+
 
 async def get_node_inputs(api_node_data: dict[str, Any], ui_node_data: dict[str, Any]):
-    api_inputs = {input: input_data for input, input_data in api_node_data.get("inputs", {}).items()}
+    api_inputs = {
+        input: input_data
+        for input, input_data in api_node_data.get("inputs", {}).items()
+    }
 
     ui_inputs = {
         input_data["name"]: input_data["widget"]
-        for input_data in ui_node_data.get("inputs",[])
+        for input_data in ui_node_data.get("inputs", [])
         if "widget" in input_data
     }
 
