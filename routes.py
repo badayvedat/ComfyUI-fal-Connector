@@ -301,19 +301,19 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
                 upstream_node_class_type,
             )
 
-            if upstream_node_class_type == "ComboInput_fal":
+            if upstream_node_class_type == "StringInput_fal":
                 input_key = [upstream_node_id, "inputs", "value"]
                 fal_inputs[input_name] = upstream_node_inputs["value"]
 
-            if upstream_node_class_type == "IntegerInput_fal":
+            elif upstream_node_class_type == "IntegerInput_fal":
                 input_key = [upstream_node_id, "inputs", "number"]
                 fal_inputs[input_name] = upstream_node_inputs["number"]
 
-            if upstream_node_class_type == "FloatInput_fal":
+            elif upstream_node_class_type == "FloatInput_fal":
                 input_key = [upstream_node_id, "inputs", "number"]
                 fal_inputs[input_name] = upstream_node_inputs["number"]
 
-            if upstream_node_class_type == "BooleanInput_fal":
+            elif upstream_node_class_type == "BooleanInput_fal":
                 input_key = [upstream_node_id, "inputs", "value"]
                 fal_inputs[input_name] = upstream_node_inputs["value"]
 
