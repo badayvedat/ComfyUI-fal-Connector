@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { $el } from "../../scripts/ui.js";
+import { getJSTemplate } from "./js_template.js";
 
 let processingQueue = false;
 
@@ -164,16 +165,15 @@ const hideUnusedElements = async () => {
   }
 };
 
-const saveComfyPrompt = async (promptJson) => {
-  let filename = "fal_api_workflow.json";
-  filename = prompt("Save workflow (API) as:", filename);
+const saveComfyPrompt = async (stringifiedJSCode) => {
+  let filename = "fal_example.js";
+  filename = prompt("Save Comfy workflow (fal) as:", filename);
   if (!filename) return;
-  if (!filename.toLowerCase().endsWith(".json")) {
-    filename += ".json";
+  if (!filename.toLowerCase().endsWith(".js")) {
+    filename += ".js";
   }
 
-  const json = JSON.stringify(promptJson, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
+  const blob = new Blob([stringifiedJSCode], { type: "text/javascript" });
   const url = URL.createObjectURL(blob);
   const a = $el("a", {
     href: url,
@@ -191,7 +191,7 @@ const saveComfyPrompt = async (promptJson) => {
 const registerSaveFalFormatButton = async () => {
   const falFormatButton = document.createElement("button");
   falFormatButton.id = "save-fal-format-button";
-  falFormatButton.textContent = "Save as fal format";
+  falFormatButton.textContent = "Show fal example";
   falFormatButton.style.background =
     "linear-gradient(90deg, #192A51 0%, #6B3E9B 50%, #0099FF 100%)";
   falFormatButton.style.display = "inline-block";
@@ -233,16 +233,17 @@ const registerSaveFalFormatButton = async () => {
         };
       }
       const responseJSON = await response.json();
-      const json = JSON.stringify(responseJSON, null, 2);
+      const jsTemplate = getJSTemplate(responseJSON);
 
-      showSaveButton(responseJSON);
+      await showSaveButton(jsTemplate);
       app.ui.dialog.show(
-        $el("div", {}, [
+        $el("div", 
+          {}, [
           $el("pre", {
             style: {
               color: "white",
             },
-            textContent: json,
+            textContent: jsTemplate,
           }),
         ]),
       );

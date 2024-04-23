@@ -238,11 +238,11 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
             "class_type": file_data["class_type"],
         }
 
+    api_inputs_counter = {}
     async for _, _, api_node_data, ui_node_data in get_node_data(
         api_workflow, ui_workflow
     ):
         api_inputs, _ = await get_node_inputs(api_node_data, ui_node_data)
-        api_inputs_counter = {}
 
         for _, api_input_data in api_inputs.items():
             if not isinstance(api_input_data, list):
