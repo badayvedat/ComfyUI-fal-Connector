@@ -1,12 +1,12 @@
-from collections import defaultdict
 import functools
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+import fal_client
 import httpx
 from aiohttp import web
-from fal.toolkit import File
 from httpx_sse import SSEError, aconnect_sse
 from server import PromptServer
 
@@ -38,7 +38,7 @@ async def get_comfy_error_response(
 
 @functools.lru_cache(maxsize=128)
 def _upload_file(file_path: Path, md5_hash: str):
-    return File.from_path(file_path).url
+    return fal_client.upload_file(file_path)
 
 
 def _calculate_file_hash(file_path: Path):

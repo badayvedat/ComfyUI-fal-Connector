@@ -2,6 +2,8 @@ import configparser
 import functools
 import os
 
+from fal_client.auth import MissingCredentialsError
+
 
 @functools.cache
 def get_fal_config():
@@ -26,9 +28,12 @@ def get_headers():
 
 
 def set_fal_credentials():
-    from fal.auth import key_credentials
+    from fal_client.auth import fetch_credentials
 
-    api_key = key_credentials()
+    try:
+        api_key = fetch_credentials()
+    except MissingCredentialsError:
+        api_key = None
 
     if not api_key:
         config = get_fal_config()
