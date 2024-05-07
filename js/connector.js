@@ -115,7 +115,7 @@ api.addEventListener("fal-info", async ({ detail }) => {
   elem.style.display = "block";
 });
 
-api.addEventListener("fal-node-timings", async ({ detail }) => {});
+api.addEventListener("fal-node-timings", async ({ detail }) => { });
 
 const registerFalConnectButton = async () => {
   const falConnectButton = document.createElement("button");
@@ -237,7 +237,7 @@ const registerSaveFalFormatButton = async () => {
 
       await showSaveButton(jsTemplate);
       app.ui.dialog.show(
-        $el("div", 
+        $el("div",
           {}, [
           $el("pre", {
             style: {
@@ -426,6 +426,30 @@ function convertTofalInput(node, widget, config) {
   newNode.connect(0, node, node.inputs.length - 1);
 }
 
+function isApiJson(data) {
+  // 'prompt' is a top level key in fal format
+  if (data.prompt) {
+    return Object.values(data.prompt).every((v) => v.class_type);
+  }
+  return Object.values(data).every((v) => v.class_type);
+}
+
+function loadApiJson(original_fn, apiData) {
+  let promptData = apiData;
+
+  if (apiData.prompt) {
+    promptData = apiData.prompt;
+  }
+
+  return original_fn.call(app, promptData);
+}
+
+async function patchAppAPILoader() {
+  app.isApiJson = isApiJson;
+  const originalLoadApiJson = app.loadApiJson;
+  app.loadApiJson = (apiData) => loadApiJson(originalLoadApiJson, apiData);
+}
+
 app.registerExtension({
   name: "Comfy.falConnector",
   async setup() {
@@ -433,6 +457,7 @@ app.registerExtension({
     await registerFalInfoLabel();
     await hideUnusedElements();
     await registerSaveFalFormatButton();
+    await patchAppAPILoader();
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     nodeType.prototype.getExtraMenuOptions = function (_, options) {
