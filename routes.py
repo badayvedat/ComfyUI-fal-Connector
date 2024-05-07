@@ -80,26 +80,49 @@ async def upload_file_load_video(node_id, node_data, dry_run=False):
     return {"key": [node_id, "inputs", "video"], "url": fal_file_url}
 
 
+async def upload_file_load_audio(node_id, node_data, dry_run=False):
+    import folder_paths
+
+    audio = node_data["inputs"]["audio"]
+    audio_path = Path(folder_paths.get_annotated_filepath(audio))
+
+    fal_file_url = "example_url"
+    if not dry_run:
+        fal_file_url = upload_file(audio_path)
+
+    return {"key": [node_id, "inputs", "audio"], "url": fal_file_url}
+
+
 async def upload_input_files(
     prompt_data: dict[str, dict[str, Any]], dry_run: bool = False
 ):
+    load_image_nodes = ["LoadImage"]
+    load_video_nodes = ["VHS_LoadVideo"]
+    load_audio_nodes = ["LoadAudio", "LoadVHSAudio", "VHS_LoadAudio"]
+    load_nodes = load_image_nodes + load_video_nodes + load_audio_nodes
+
     file_urls = []
 
     for node_id, node_data in prompt_data.items():
         node_class_type = node_data["class_type"]
         file_data = None
 
-        if node_class_type not in ["LoadImage", "VHS_LoadVideo"]:
+        if node_class_type not in load_nodes:
             continue
 
-        if node_class_type == "LoadImage":
+        if node_class_type in load_image_nodes:
             file_data = await upload_file_load_image(
                 node_id, node_data, dry_run=dry_run
             )
-        elif node_class_type == "VHS_LoadVideo":
+        elif node_class_type in load_video_nodes:
             file_data = await upload_file_load_video(
                 node_id, node_data, dry_run=dry_run
             )
+        elif node_class_type in load_audio_nodes:
+            file_data = await upload_file_load_audio(
+                node_id, node_data, dry_run=dry_run
+            )
+
         file_data["class_type"] = node_class_type
         file_urls.append(file_data)
 
