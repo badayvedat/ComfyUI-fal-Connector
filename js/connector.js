@@ -2,6 +2,7 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { $el } from "../../scripts/ui.js";
 import { getJSTemplate } from "./js_template.js";
+import { getDefaultWorkflow } from "./default_workflow.js";
 
 let processingQueue = false;
 
@@ -237,8 +238,7 @@ const registerSaveFalFormatButton = async () => {
 
       await showSaveButton(jsTemplate);
       app.ui.dialog.show(
-        $el("div",
-          {}, [
+        $el("div", {}, [
           $el("pre", {
             style: {
               color: "white",
@@ -261,6 +261,32 @@ const registerSaveFalFormatButton = async () => {
   const falConnectButton = document.getElementById("fal-connect-button");
   falConnectButton.after(falFormatButton);
 };
+
+async function getfalAPIJson() {
+  try {
+    const comfyPrompt = await app.graphToPrompt();
+    const response = await api.fetchApi("/fal/save", {
+      method: "POST",
+      body: JSON.stringify({ ...comfyPrompt, client_id: api.clientId }),
+      headers: { "Content-Type": "application/json" },
+    });
+    if (response.status !== 200) {
+      throw {
+        response: await response.json(),
+      };
+    }
+    const responseJSON = await response.json();
+    return responseJSON;
+  } catch (error) {
+    hideSaveButton();
+    const formattedError = await formatPromptError(error);
+    app.ui.dialog.show(formattedError);
+    if (error.response) {
+      app.lastNodeErrors = error.response.node_errors;
+      app.canvas.draw(true, true);
+    }
+  }
+}
 
 // Based on https://github.com/comfyanonymous/ComfyUI/blob/4b9005e949224782236a8b914eae48bc503f1f18/web/extensions/core/widgetInputs.js
 const CONVERTED_TYPE = "converted-widget";
@@ -448,6 +474,7 @@ async function patchAppAPILoader() {
   app.isApiJson = isApiJson;
   const originalLoadApiJson = app.loadApiJson;
   app.loadApiJson = (apiData) => loadApiJson(originalLoadApiJson, apiData);
+  api.init = () => {};
 }
 
 app.registerExtension({
@@ -455,9 +482,11 @@ app.registerExtension({
   async setup() {
     await registerFalConnectButton();
     await registerFalInfoLabel();
-    await hideUnusedElements();
+    // await hideUnusedElements();
     await registerSaveFalFormatButton();
     await patchAppAPILoader();
+    await addfalListeners();
+    await sendReadyMessage();
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     nodeType.prototype.getExtraMenuOptions = function (_, options) {
@@ -502,6 +531,45 @@ const cssCode = `
     color: #fefefe;
     background: linear-gradient(90deg, #192A51 0%, #6B3E9B 50%, #0099FF 100%);
 }
+
+.comfy-menu
+{
+  display: none;
+}
+
+.comfy-menu-hamburger
+{
+  display: none;
+}
 `;
+
+
 styleElement.innerHTML = cssCode;
 document.head.appendChild(styleElement);
+
+async function sendReadyMessage() {
+  const defaultWorkflow = await getDefaultWorkflow();
+  window.parent.postMessage({ type: "editor-ready" }, "*");
+}
+
+async function addfalListeners() {
+  window.addEventListener("message", function (event) {
+    if (event.data.type === "fal-set-workflow") {
+      app.loadApiJson(event.data.data);
+    } else if (event.data.type === "fal-request-workflow") {
+      getfalAPIJson().then(async (workflow) => {
+        window.parent.postMessage(
+          { type: "fal-get-workflow", data: workflow },
+          "*",
+        );
+      });
+    } else if (event.data.type === "fal-request-update-workflow") {
+      getfalAPIJson().then(async (workflow) => {
+        window.parent.postMessage(
+          { type: "fal-update-workflow", data: workflow },
+          "*",
+        );
+      });
+    }
+  });
+}

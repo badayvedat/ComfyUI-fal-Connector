@@ -41,7 +41,6 @@ def get_fal_api_key():
             api_key = config["fal"]["api_key"]
     except Exception as e:
         print(e)
-        raise MissingCredentialsError("No FAL API key found.")
     
     if not api_key:
         raise MissingCredentialsError("No FAL API key found.")
