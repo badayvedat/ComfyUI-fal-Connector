@@ -164,6 +164,20 @@ const hideUnusedElements = async () => {
       element.style.display = "none";
     }
   }
+
+  const buttons = document.getElementsByTagName("button");
+  let loadSessionHistoryButton = null;
+  
+  for (var i = 0; i < buttons.length; i++) {
+      if (buttons[i].textContent === 'Load Session History') {
+        loadSessionHistoryButton = buttons[i];
+          break;
+      }
+  }
+
+  if (loadSessionHistoryButton) {
+    loadSessionHistoryButton.parentElement.style.display = "none";
+  }
 };
 
 const saveComfyPrompt = async (stringifiedJSCode) => {
@@ -482,7 +496,7 @@ app.registerExtension({
   async setup() {
     await registerFalConnectButton();
     await registerFalInfoLabel();
-    // await hideUnusedElements();
+    await hideUnusedElements();
     await registerSaveFalFormatButton();
     await patchAppAPILoader();
     await addfalListeners();
