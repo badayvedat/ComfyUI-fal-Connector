@@ -60,7 +60,7 @@ async def upload_file_load_image(node_id, node_data, dry_run=False):
     image = node_data["inputs"]["image"]
     image_path = Path(folder_paths.get_annotated_filepath(image))
 
-    fal_file_url = "example_url"
+    fal_file_url = "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png"
     if not dry_run:
         fal_file_url = upload_file(image_path)
 
@@ -70,35 +70,40 @@ async def upload_file_load_image(node_id, node_data, dry_run=False):
 async def upload_file_load_video(node_id, node_data, dry_run=False):
     import folder_paths
 
-    video = node_data["inputs"]["video"]
-    video_path = Path(folder_paths.get_annotated_filepath(video))
-
-    fal_file_url = "example_url"
-    if not dry_run:
+    if dry_run:
+        fal_file_url = "https://fal.media/files/lion/q1azTfnHgL0gqvMNU_8mF.mp4"
+    else:
+        video = node_data["inputs"]["video"]
+        video_path = Path(folder_paths.get_annotated_filepath(video))
         fal_file_url = upload_file(video_path)
 
     return {"key": [node_id, "inputs", "video"], "url": fal_file_url}
 
 
-async def upload_file_load_audio(node_id, node_data, dry_run=False):
+async def upload_file_load_audio(node_id, node_data, node_class_type, dry_run=False):
     import folder_paths
 
-    audio = node_data["inputs"]["audio"]
-    audio_path = Path(folder_paths.get_annotated_filepath(audio))
+    input_key = "audio"
+    if node_class_type == "VHS_LoadAudio":
+        input_key = "audio_file"
 
-    fal_file_url = "example_url"
-    if not dry_run:
+    if dry_run:
+        fal_file_url = "https://output.lemonfox.ai/brownfox.mp3"
+    else:
+        audio = node_data["inputs"][input_key]
+        audio_path = Path(folder_paths.get_annotated_filepath(audio))
+
         fal_file_url = upload_file(audio_path)
 
-    return {"key": [node_id, "inputs", "audio"], "url": fal_file_url}
+    return {"key": [node_id, "inputs", input_key], "url": fal_file_url}
 
 
 async def upload_input_files(
     prompt_data: dict[str, dict[str, Any]], dry_run: bool = False
 ):
     load_image_nodes = ["LoadImage"]
-    load_video_nodes = ["VHS_LoadVideo"]
-    load_audio_nodes = ["LoadAudio", "LoadVHSAudio", "VHS_LoadAudio"]
+    load_video_nodes = ["VHS_LoadVideoPath", "VHS_LoadVideo"]
+    load_audio_nodes = ["LoadAudio", "VHS_LoadAudio", "VHS_LoadAudioUpload"]
     load_nodes = load_image_nodes + load_video_nodes + load_audio_nodes
 
     file_urls = []
@@ -120,7 +125,7 @@ async def upload_input_files(
             )
         elif node_class_type in load_audio_nodes:
             file_data = await upload_file_load_audio(
-                node_id, node_data, dry_run=dry_run
+                node_id, node_data, node_class_type, dry_run=dry_run
             )
 
         file_data["class_type"] = node_class_type
