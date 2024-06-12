@@ -224,8 +224,6 @@ async def save_prompt(request):
             data=error_message,
         )
 
-    payload["extra_data"].pop("extra_pnginfo", None)
-
     return web.json_response(status=200, data=payload)
 
 

@@ -477,6 +477,10 @@ function isApiJson(data) {
 function loadApiJson(original_fn, apiData) {
   let promptData = apiData;
 
+  if (apiData.extra_data && apiData.extra_data.extra_pnginfo) {
+    return app.loadGraphData(apiData.extra_data.extra_pnginfo);
+  }
+
   if (apiData.prompt) {
     promptData = apiData.prompt;
   }
