@@ -101,6 +101,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "RemoteLoraLoader_fal": "Lora Loader from URL (fal)",
-    "RemoteCheckpointLoader_fal": "Checkpoint Loader from URL (fal)",
+    "RemoteLoraLoader_fal": "Load LoRA from URL (fal)",
+    "RemoteCheckpointLoader_fal": "Load Checkpoint from URL (fal)",
 }
