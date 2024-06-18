@@ -97,6 +97,7 @@ class SaveImage:
         return {
             "required": {
                 "images": ("IMAGE",),
+                 "filename_prefix": ("STRING", {"default": "ComfyUI"}),
                 "output_name": (
                     "STRING",
                     {"default": f"output_{get_random_short_id()}"},
@@ -113,8 +114,11 @@ class SaveImage:
     CATEGORY = "image"
 
     def save_images(
-        self, images, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None
+        self, images, output_name, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None
     ):
+        if not output_name:
+            raise ValueError("Output name is required")
+
         filename_prefix += self.prefix_append
         (
             full_output_folder,
