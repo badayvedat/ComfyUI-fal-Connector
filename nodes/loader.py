@@ -1,4 +1,4 @@
-from .download_utils import download_model_weights
+from ..download_utils import download_model_weights
 import folder_paths
 
 
@@ -92,3 +92,15 @@ class RemoteCheckpointLoader:
             embedding_directory=folder_paths.get_folder_paths("embeddings"),
         )
         return out[:3]
+
+
+NODE_CLASS_MAPPINGS = {
+
+    "RemoteLoraLoader_fal": RemoteLoraLoader,
+    "RemoteCheckpointLoader_fal": RemoteCheckpointLoader,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "RemoteLoraLoader_fal": "Lora Loader from URL (fal)",
+    "RemoteCheckpointLoader_fal": "Checkpoint Loader from URL (fal)",
+}

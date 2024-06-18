@@ -9,7 +9,6 @@ from PIL.PngImagePlugin import PngInfo
 import numpy as np
 from comfy.cli_args import args
 import folder_paths
-from .loader_nodes import RemoteLoraLoader, RemoteCheckpointLoader
 
 
 class IntegerInput:
@@ -165,8 +164,6 @@ NODE_CLASS_MAPPINGS = {
     "BooleanInput_fal": BooleanInput,
     "StringInput_fal": StringInput,
     "SaveImage_fal": SaveImage,
-    "RemoteLoraLoader_fal": RemoteLoraLoader,
-    "RemoteCheckpointLoader_fal": RemoteCheckpointLoader,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -175,6 +172,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BooleanInput_fal": "Boolean Input (fal)",
     "StringInput_fal": "String Input (fal)",
     "SaveImage_fal": "Save Image (fal)",
-    "RemoteLoraLoader_fal": "Lora Loader from URL (fal)",
-    "RemoteCheckpointLoader_fal": "Checkpoint Loader from URL (fal)",
 }
