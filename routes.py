@@ -286,7 +286,10 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
             input_name = upstream_node_inputs["name"]
 
             previous_value = api_inputs_counter.get(input_name)
-            if previous_value and previous_value != (upstream_node_id, upstream_node_class_type):
+            if previous_value and previous_value != (
+                upstream_node_id,
+                upstream_node_class_type,
+            ):
                 (
                     previous_upstream_node_id,
                     previous_upstream_node_class_type,
