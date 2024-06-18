@@ -329,7 +329,6 @@ const FAL_INPUT_NODES = [
   "FloatInput_fal",
   "BooleanInput_fal",
   "StringInput_fal",
-  // "ComboInput_fal",
 ];
 
 // create a map to keep track of the number of converted widgets
@@ -418,16 +417,7 @@ function convertTofalInput(node, widget, config) {
   const originalValue = widget.value;
 
   let newNode = null;
-  if (type === "COMBO") {
-    const widgetOptions = widget?.options?.values || [];
-    newNode = LiteGraph.createNode("ComboInput_fal");
-
-    newNode.widgets[1].value = originalValue;
-    newNode.widgets[1].options.values = widgetOptions;
-
-    newNode.widgets[2].value = widgetOptions[0];
-    newNode.widgets[2].options.values = widgetOptions;
-  } else if (type === "INT") {
+  if (type === "INT") {
     newNode = LiteGraph.createNode("IntegerInput_fal");
 
     newNode.widgets[1].value = originalValue;
@@ -539,7 +529,7 @@ app.registerExtension({
         }
       }
     };
-  },
+  }
 });
 
 var styleElement = document.createElement("style");
@@ -548,16 +538,6 @@ const cssCode = `
 {
     color: #fefefe;
     background: linear-gradient(90deg, #192A51 0%, #6B3E9B 50%, #0099FF 100%);
-}
-
-.comfy-menu
-{
-  display: none;
-}
-
-.comfy-menu-hamburger
-{
-  display: none;
 }
 `;
 
