@@ -142,6 +142,7 @@ def download_model_weights_fal(
     if weights_dir.exists() and not force:
         try:
             weights_path = next(weights_dir.glob("*"))
+            is_safetensors_file(weights_path)
             return weights_path
 
         # The model weights directory is empty, so we need to download the weights
@@ -163,6 +164,7 @@ def download_model_weights_fal(
         and get_local_file_content_length(target_path) == file_content_length
         and not force
     ):
+        is_safetensors_file(target_path)
         return target_path
 
     # Make sure the parent directory exists
