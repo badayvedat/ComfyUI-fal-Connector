@@ -41,7 +41,7 @@ class RemoteLoraLoader:
         if strength_model == 0 and strength_clip == 0:
             return (model, clip)
 
-        lora_path = download_model_weights(lora_url)
+        lora_path = str(download_model_weights(lora_url))
 
         lora = None
         if self.loaded_lora is not None:
@@ -84,7 +84,7 @@ class RemoteCheckpointLoader:
     def load_checkpoint(self, ckpt_url, output_vae=True, output_clip=True):
         import comfy.sd
 
-        ckpt_path = lora_path = download_model_weights(ckpt_url)
+        ckpt_path = str(download_model_weights(ckpt_url))
         out = comfy.sd.load_checkpoint_guess_config(
             ckpt_path,
             output_vae=True,
