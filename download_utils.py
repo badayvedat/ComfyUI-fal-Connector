@@ -107,9 +107,6 @@ def download_url_to_file(
                         f.write(chunk)
                         pbar.update(len(chunk))
 
-            if file_integrity_check_callback:
-                file_integrity_check_callback(file_path)
-
             # Move the file when the file is downloaded completely. Since the
             # file used is temporary, in a case of an interruption, the downloaded
             # content will be lost. So, it is safe to redownload the file in such cases.
@@ -118,6 +115,9 @@ def download_url_to_file(
             raise error
         finally:
             Path(temp_file.name).unlink(missing_ok=True)
+
+    if file_integrity_check_callback:
+        file_integrity_check_callback(file_path)
 
     return Path(dst)
 
