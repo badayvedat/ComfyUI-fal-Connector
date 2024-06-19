@@ -159,7 +159,7 @@ class SaveImage:
     
 
 # Based on https://github.com/comfyanonymous/ComfyUI/blob/04e8798c37d958d74ea6bda506b86f51356d6caf/nodes.py#L1471-L1526
-class LoadImage:
+class LoadImageFromURL:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -226,6 +226,7 @@ NODE_CLASS_MAPPINGS = {
     "BooleanInput_fal": BooleanInput,
     "StringInput_fal": StringInput,
     "SaveImage_fal": SaveImage,
+    "LoadImageFromURL_fal": LoadImageFromURL,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -234,4 +235,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BooleanInput_fal": "Boolean Input (fal)",
     "StringInput_fal": "String Input (fal)",
     "SaveImage_fal": "Save Image (fal)",
+    "LoadImageFromURL_fal": "Load Image From URL (fal)",
 }
