@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import os
 import re
 import shutil
@@ -256,3 +257,23 @@ def is_safetensors_file(path: str | Path):
             raise ValueError(f"File {path} is not a .safetensors file")
         else:
             raise e
+
+
+@contextmanager
+def download_file_temp(
+    url: str,
+    progress: bool = True,
+    headers: dict[str, str] = None,
+    chunk_size_in_mb=16,
+    file_integrity_check_callback=None,
+):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = download_url_to_file(
+            url,
+            target_dir=temp_dir,
+            progress=progress,
+            headers=headers,
+            chunk_size_in_mb=chunk_size_in_mb,
+            file_integrity_check_callback=file_integrity_check_callback,
+        )
+        yield file_path
