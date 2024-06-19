@@ -6,7 +6,6 @@ import random
 
 from PIL import Image, ImageOps, ImageSequence
 from PIL.PngImagePlugin import PngInfo
-import numpy as np
 from comfy.cli_args import args
 import folder_paths
 from ..download_utils import download_file_temp
@@ -117,6 +116,8 @@ class SaveImage:
     def save_images(
         self, images, output_name, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None
     ):
+        import numpy as np
+
         if not output_name:
             raise ValueError("Output name is required")
 
@@ -179,6 +180,7 @@ class LoadImageFromURL:
     FUNCTION = "load_image"
 
     def load_image(self, url: string):
+        import numpy as np
         import torch
 
         with download_file_temp(url) as image_path:
