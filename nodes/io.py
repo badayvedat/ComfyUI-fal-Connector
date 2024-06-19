@@ -222,11 +222,15 @@ def get_random_short_id():
     return "".join(random.choices(alphabet, k=8))
 
 
-NODE_CLASS_MAPPINGS = {
+FAL_INPUT_NODES = {
     "IntegerInput_fal": IntegerInput,
     "FloatInput_fal": FloatInput,
     "BooleanInput_fal": BooleanInput,
     "StringInput_fal": StringInput,
+
+}
+
+FAL_IO_HELPER_NODES = {
     "SaveImage_fal": SaveImage,
     "LoadImageFromURL_fal": LoadImageFromURL,
 }
