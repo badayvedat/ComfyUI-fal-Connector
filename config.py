@@ -34,19 +34,19 @@ def get_fal_api_key():
         api_key = fetch_credentials()
     except MissingCredentialsError:
         api_key = None
-    
+
     try:
         if not api_key:
             config = get_fal_config()
             api_key = config["fal"]["api_key"]
     except Exception as e:
         print(e)
-    
+
     if not api_key:
         raise MissingCredentialsError("No FAL API key found.")
 
     return api_key
-        
+
 
 def set_fal_credentials():
     api_key = get_fal_api_key()

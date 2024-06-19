@@ -11,7 +11,7 @@ from httpx_sse import SSEError, aconnect_sse
 from server import PromptServer
 
 from .config import get_fal_endpoint, get_headers
-from .nodes import NODE_CLASS_MAPPINGS as FAL_NODES
+from .nodes.io import NODE_CLASS_MAPPINGS as FAL_IO_NODES
 
 
 class ComfyClientError(Exception):
@@ -280,13 +280,16 @@ async def build_payload(prompt_data: dict[str, dict[str, Any]], dry_run: bool = 
             upstream_node_inputs = upstream_node_data["inputs"]
             upstream_node_class_type = upstream_node_data["class_type"]
 
-            if upstream_node_class_type not in FAL_NODES:
+            if upstream_node_class_type not in FAL_IO_NODES:
                 continue
 
             input_name = upstream_node_inputs["name"]
 
             previous_value = api_inputs_counter.get(input_name)
-            if previous_value and previous_value != (upstream_node_id, upstream_node_class_type):
+            if previous_value and previous_value != (
+                upstream_node_id,
+                upstream_node_class_type,
+            ):
                 (
                     previous_upstream_node_id,
                     previous_upstream_node_class_type,
