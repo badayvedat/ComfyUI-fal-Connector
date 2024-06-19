@@ -267,10 +267,12 @@ def download_file_temp(
     chunk_size_in_mb=16,
     file_integrity_check_callback=None,
 ):
+    file_name = _parse_filename(url, None)
+
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = download_url_to_file(
             url,
-            target_dir=temp_dir,
+            file_name,
             progress=progress,
             headers=headers,
             chunk_size_in_mb=chunk_size_in_mb,
