@@ -118,7 +118,7 @@ def download_url_to_file(
             Path(temp_file.name).unlink(missing_ok=True)
 
     if file_integrity_check_callback:
-        file_integrity_check_callback(file_path)
+        file_integrity_check_callback(dst)
 
     return Path(dst)
 
