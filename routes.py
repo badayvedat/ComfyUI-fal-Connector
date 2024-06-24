@@ -57,11 +57,11 @@ def upload_file(file_path: Path):
 async def upload_file_load_image(node_id, node_data, dry_run=False):
     import folder_paths
 
-    image = node_data["inputs"]["image"]
-    image_path = Path(folder_paths.get_annotated_filepath(image))
-
-    fal_file_url = "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png"
-    if not dry_run:
+    if dry_run:
+        fal_file_url = "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png"
+    else:
+        image = node_data["inputs"]["image"]
+        image_path = Path(folder_paths.get_annotated_filepath(image))
         fal_file_url = upload_file(image_path)
 
     return {"key": [node_id, "inputs", "image"], "url": fal_file_url}
