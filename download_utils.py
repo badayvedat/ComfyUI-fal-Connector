@@ -81,6 +81,11 @@ def download_url_to_file(
         **(headers or {}),
     }
 
+    url = url.strip()
+
+    if url.startswith("data:"):
+        return _download_data_url_to_file(url, dst)
+
     import requests
 
     req = requests.get(url, headers=request_headers, stream=True, allow_redirects=True)
@@ -119,6 +124,18 @@ def download_url_to_file(
 
     if file_integrity_check_callback:
         file_integrity_check_callback(dst)
+
+    return Path(dst)
+
+
+def _download_data_url_to_file(url: str, dst: str | Path):
+    import base64
+
+    data = url.split(",")[1]
+    data = base64.b64decode(data)
+
+    with open(dst, "wb") as fp:
+        fp.write(data)
 
     return Path(dst)
 
@@ -202,6 +219,7 @@ def _get_filename_from_content_disposition(cd: str | None) -> str | None:
 
 
 def _parse_filename(url: str, cd: str | None) -> str:
+    url = url.strip()
     file_name = _get_filename_from_content_disposition(cd)
 
     if not file_name:
@@ -212,6 +230,14 @@ def _parse_filename(url: str, cd: str | None) -> str:
         else:
             url_path = parsed_url.path
             file_name = Path(url_path).name or _hash_url(url)
+
+    if url.startswith("data:"):
+        import mimetypes
+
+        mime_type = url.split(",")[0].split(":")[1].split(";")[0]
+        extension = mimetypes.guess_extension(mime_type)
+        if extension:
+            file_name += extension
 
     return file_name  # type: ignore
 
@@ -272,7 +298,7 @@ def download_file_temp(
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = download_url_to_file(
             url,
-            file_name,
+            f"{temp_dir}/{file_name}",
             progress=progress,
             headers=headers,
             chunk_size_in_mb=chunk_size_in_mb,
