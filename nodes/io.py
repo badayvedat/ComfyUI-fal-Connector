@@ -207,7 +207,7 @@ class LoadImageFromURL:
                 image = i.convert(return_image_mode)
             
             print("Old image mode: ", i.mode)
-            print("New image mode: ", image.mode)
+            print("New image mode: ", return_image_mode)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = torch.from_numpy(image)[None,]
