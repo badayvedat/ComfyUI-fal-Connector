@@ -172,7 +172,7 @@ class LoadImageFromURL:
                     },
                 ),
                 "return_image_mode": (
-                    ["RGB", "BGR", "L", "1"],
+                    ["RGB", "RGBA", "BGR", "BGRA", "L", "1"],
                     {"default": "RGB"},
                 ),
             }
@@ -183,7 +183,7 @@ class LoadImageFromURL:
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "load_image"
 
-    def load_image(self, url: string, return_image_mode: string = "RGB"):
+    def load_image(self, url: str, return_image_mode: str = "RGB"):
         import numpy as np
         import torch
 
@@ -198,8 +198,15 @@ class LoadImageFromURL:
             if i.mode == 'I':
                 i = i.point(lambda i: i * (1 / 255))
 
+            if i.mode == return_image_mode:
+                image = i
+            elif i.mode.startswith('RGB') and return_image_mode.startswith('BGR'):
+                image = self.convert_pil_rgb_to_bgr(i, return_image_mode)
+            else:
+                image = i.convert(return_image_mode)
             
-            image = i.convert(return_image_mode)
+            print("Old mode: ", i.mode)
+            print("New mode: ", image.mode)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = torch.from_numpy(image)[None,]
@@ -222,6 +229,19 @@ class LoadImageFromURL:
 
         return (output_image, output_mask)
 
+    def convert_pil_rgb_to_bgr(self, pil_image, mode='BGR'):
+        channels = pil_image.split()
+        # if alpha channel is present, keep it as the last channel
+        new_channels = [channels[2], channels[1], channels[0]]
+        if mode == 'BGRA':
+            if len(channels) == 4:
+                new_channels.append(channels[3])
+            else:
+                new_channels.append(Image.new('L', pil_image.size, 255))
+        
+        mode = 'RGBA' if mode == 'BGRA' else 'RGB'
+        
+        return Image.merge(mode, new_channels)
 
 def get_random_short_id():
     alphabet = string.ascii_lowercase + string.digits
