@@ -1,5 +1,6 @@
-from ..download_utils import download_model_weights
 import folder_paths
+
+from ..download_utils import download_model_weights
 
 
 class RemoteLoraLoader:
@@ -35,8 +36,8 @@ class RemoteLoraLoader:
     CATEGORY = "loaders"
 
     def load_lora(self, model, clip, lora_url, strength_model, strength_clip):
-        import comfy.utils
         import comfy.sd
+        import comfy.utils
 
         if strength_model == 0 and strength_clip == 0:
             return (model, clip)
@@ -95,7 +96,6 @@ class RemoteCheckpointLoader:
 
 
 NODE_CLASS_MAPPINGS = {
-
     "RemoteLoraLoader_fal": RemoteLoraLoader,
     "RemoteCheckpointLoader_fal": RemoteCheckpointLoader,
 }
