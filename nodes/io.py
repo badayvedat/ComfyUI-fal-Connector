@@ -1,13 +1,13 @@
-import json
-import os
 import random
 import string
+import os
+import json
+import random
 
-import folder_paths
-from comfy.cli_args import args
 from PIL import Image, ImageOps, ImageSequence
 from PIL.PngImagePlugin import PngInfo
-
+from comfy.cli_args import args
+import folder_paths
 from ..download_utils import download_file_temp
 
 
@@ -97,7 +97,7 @@ class SaveImage:
         return {
             "required": {
                 "images": ("IMAGE",),
-                "filename_prefix": ("STRING", {"default": "ComfyUI"}),
+                 "filename_prefix": ("STRING", {"default": "ComfyUI"}),
                 "output_name": (
                     "STRING",
                     {"default": f"output_{get_random_short_id()}"},
@@ -114,12 +114,7 @@ class SaveImage:
     CATEGORY = "image"
 
     def save_images(
-        self,
-        images,
-        output_name,
-        filename_prefix="ComfyUI",
-        prompt=None,
-        extra_pnginfo=None,
+        self, images, output_name, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None
     ):
         import numpy as np
 
@@ -162,7 +157,7 @@ class SaveImage:
             counter += 1
 
         return {"ui": {"images": results}}
-
+    
 
 # Based on https://github.com/comfyanonymous/ComfyUI/blob/04e8798c37d958d74ea6bda506b86f51356d6caf/nodes.py#L1471-L1526
 class LoadImageFromURL:
@@ -176,13 +171,12 @@ class LoadImageFromURL:
                         "default": "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png"
                     },
                 ),
-            },
-            "optional": {
+            },"optional": {
                 "return_image_mode": (
                     ["RGB", "RGBA", "BGR", "BGRA", "L", "1"],
                     {"default": "RGB"},
                 ),
-            },
+            }
         }
 
     CATEGORY = "image"
@@ -202,24 +196,27 @@ class LoadImageFromURL:
         for i in ImageSequence.Iterator(img):
             i = ImageOps.exif_transpose(i)
 
-            if i.mode == "I":
+            if i.mode == 'I':
                 i = i.point(lambda i: i * (1 / 255))
 
             if i.mode == return_image_mode:
                 image = i
-            elif i.mode.startswith("RGB") and return_image_mode.startswith("BGR"):
+            elif i.mode.startswith('RGB') and return_image_mode.startswith('BGR'):
                 image = self.convert_pil_rgb_to_bgr(i, return_image_mode)
             else:
                 image = i.convert(return_image_mode)
+            
+            print("Old image mode: ", i.mode)
+            print("New image mode: ", image.mode)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = torch.from_numpy(image)[None,]
 
-            if "A" in i.getbands():
-                mask = np.array(i.getchannel("A")).astype(np.float32) / 255.0
-                mask = 1.0 - torch.from_numpy(mask)
+            if 'A' in i.getbands():
+                mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
+                mask = 1. - torch.from_numpy(mask)
             else:
-                mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
+                mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
 
             output_images.append(image)
             output_masks.append(mask.unsqueeze(0))
@@ -233,20 +230,19 @@ class LoadImageFromURL:
 
         return (output_image, output_mask)
 
-    def convert_pil_rgb_to_bgr(self, pil_image, mode="BGR"):
+    def convert_pil_rgb_to_bgr(self, pil_image, mode='BGR'):
         channels = pil_image.split()
         # if alpha channel is present, keep it as the last channel
         new_channels = [channels[2], channels[1], channels[0]]
-        if mode == "BGRA":
+        if mode == 'BGRA':
             if len(channels) == 4:
                 new_channels.append(channels[3])
             else:
-                new_channels.append(Image.new("L", pil_image.size, 255))
-
-        mode = "RGBA" if mode == "BGRA" else "RGB"
-
+                new_channels.append(Image.new('L', pil_image.size, 255))
+        
+        mode = 'RGBA' if mode == 'BGRA' else 'RGB'
+        
         return Image.merge(mode, new_channels)
-
 
 def get_random_short_id():
     alphabet = string.ascii_lowercase + string.digits
@@ -258,6 +254,7 @@ FAL_INPUT_NODES = {
     "FloatInput_fal": FloatInput,
     "BooleanInput_fal": BooleanInput,
     "StringInput_fal": StringInput,
+
 }
 
 FAL_IO_HELPER_NODES = {
