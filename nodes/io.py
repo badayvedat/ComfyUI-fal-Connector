@@ -171,7 +171,10 @@ class LoadImageFromURL:
                         "default": "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png"
                     },
                 ),
-                "convert_to_rgb": ("BOOLEAN", {"default": True}),
+                "return_image_mode": (
+                    ["RGB", "BGR", "L", "1"],
+                    {"default": "RGB"},
+                ),
             }
         }
 
@@ -180,7 +183,7 @@ class LoadImageFromURL:
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "load_image"
 
-    def load_image(self, url: string, convert_to_rgb: bool):
+    def load_image(self, url: string, return_image_mode: string = "RGB"):
         import numpy as np
         import torch
 
@@ -195,10 +198,8 @@ class LoadImageFromURL:
             if i.mode == 'I':
                 i = i.point(lambda i: i * (1 / 255))
 
-            if convert_to_rgb:
-                image = i.convert("RGB")
-            else:
-                image = i
+            
+            image = i.convert(return_image_mode)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = torch.from_numpy(image)[None,]
