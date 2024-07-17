@@ -57,10 +57,10 @@ def upload_file(file_path: Path):
 async def upload_file_load_image(node_id, node_data, dry_run=False):
     import folder_paths
 
+    image = node_data["inputs"].get("image", "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png")
     if dry_run:
-        fal_file_url = "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png"
+        fal_file_url = image
     else:
-        image = node_data["inputs"]["image"]
         image_path = Path(folder_paths.get_annotated_filepath(image))
         fal_file_url = upload_file(image_path)
 
@@ -70,10 +70,10 @@ async def upload_file_load_image(node_id, node_data, dry_run=False):
 async def upload_file_load_video(node_id, node_data, dry_run=False):
     import folder_paths
 
+    video = node_data["inputs"].get("video", "https://fal.media/files/lion/q1azTfnHgL0gqvMNU_8mF.mp4")
     if dry_run:
-        fal_file_url = "https://fal.media/files/lion/q1azTfnHgL0gqvMNU_8mF.mp4"
+        fal_file_url = video
     else:
-        video = node_data["inputs"]["video"]
         video_path = Path(folder_paths.get_annotated_filepath(video))
         fal_file_url = upload_file(video_path)
 
@@ -87,10 +87,11 @@ async def upload_file_load_audio(node_id, node_data, node_class_type, dry_run=Fa
     if node_class_type == "VHS_LoadAudio":
         input_key = "audio_file"
 
+
+    audio = node_data["inputs"].get(input_key, "https://output.lemonfox.ai/brownfox.mp3")
     if dry_run:
-        fal_file_url = "https://output.lemonfox.ai/brownfox.mp3"
+        fal_file_url = audio
     else:
-        audio = node_data["inputs"][input_key]
         audio_path = Path(folder_paths.get_annotated_filepath(audio))
 
         fal_file_url = upload_file(audio_path)
@@ -397,7 +398,7 @@ async def emit_events(client: httpx.AsyncClient, payload: dict, client_id: str):
         url=fal_endpoint,
         json=payload,
         headers=headers,
-        timeout=120,
+        # timeout=120,
     ) as event_source:
         try:
             async for event in event_source.aiter_sse():
