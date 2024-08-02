@@ -2,7 +2,7 @@
 name = "comfyui-fal-connector"
 description = "The ComfyUI-fal-Connector is a tool designed to provide an integration between ComfyUI and fal. This extension allows users to execute their ComfyUI workflows directly on [a/fal.ai](https://fal.ai/). This enables users to leverage the computational power and resources provided by fal.ai for running their ComfyUI workflows."
 version = "1.0.0"
-license = "LICENSE"
+license = { file = "LICENSE" }
 dependencies = ["fal-client>=0.3.0", "httpx", "httpx-sse", "fal"]
 
 [project.urls]
