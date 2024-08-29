@@ -2,8 +2,7 @@ import configparser
 import functools
 import os
 
-from fal_client.auth import MissingCredentialsError
-
+from fal_client.auth import MissingCredentialsError, FAL_RUN_HOST
 
 @functools.cache
 def get_fal_config():
@@ -18,7 +17,7 @@ def get_fal_config():
 def get_fal_endpoint():
     config = get_fal_config()
     endpoint = config["fal"]["application_name"]
-    return f"https://fal.run/{endpoint}"
+    return f"https://{FAL_RUN_HOST}/{endpoint}"
 
 
 @functools.cache
