@@ -16,7 +16,7 @@ def get_fal_config():
 @functools.cache
 def get_fal_endpoint():
     config = get_fal_config()
-    endpoint = config["fal"]["application_name"]
+    endpoint = os.environ.get("FAL_COMFY_ENDPOINT", config["fal"]["application_name"])
     return f"https://{FAL_RUN_HOST}/{endpoint}"
 
 
