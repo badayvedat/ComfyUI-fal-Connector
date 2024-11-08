@@ -1,20 +1,35 @@
+import hashlib
 import os
 import re
 import shutil
 import tempfile
 from contextlib import contextmanager
-from pathlib import Path
+from pathlib import Path, PurePath
 from urllib.parse import unquote, urlparse
 
-import fal
-from fal.toolkit.utils.download_utils import (
-    FAL_MODEL_WEIGHTS_DIR,
-    DownloadError,
-    _hash_url,
-)
+# copied from https://github.com/fal-ai/fal/blob/74783409d0bc777de549f6534ee3a64053d169b7/projects/fal/src/fal/toolkit/utils/download_utils.py#L13-L40
+class DownloadError(Exception):
+    pass
 
-FAL_VERSION = getattr(fal, "__version__", "<1.0.0")
-_REQUEST_HEADERS = {"User-Agent": f"fal-client ({FAL_VERSION}/python)"}
+class DownloadError(Exception):
+    pass
+
+
+def _hash_url(url: str) -> str:
+    """Hashes a URL using SHA-256.
+
+    Args:
+        url: The URL to be hashed.
+
+    Returns:
+        A string representing the hashed URL.
+    """
+    return hashlib.sha256(url.encode("utf-8")).hexdigest()
+
+
+FAL_MODEL_WEIGHTS_DIR = PurePath("/data") / ".fal" / "model_weights"
+
+_REQUEST_HEADERS = {"User-Agent": f"fal-client (python)"}
 
 
 def get_civitai_headers() -> dict[str, str]:
