@@ -16,7 +16,7 @@ class IntegerInput:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "name": ("STRING", {"default": f"int_{get_random_short_id()}"}),
+                "name": ("STRING", {"default": "int_input"}),
                 "number": ("INT", {"default": 0}),
                 "min": ("INT", {"default": -(2**31)}),
                 "max": ("INT", {"default": 2**31 - 1}),
@@ -36,7 +36,7 @@ class FloatInput:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "name": ("STRING", {"default": f"float_{get_random_short_id()}"}),
+                "name": ("STRING", {"default": "float_input"}),
                 "number": ("FLOAT", {"default": 0}),
                 "min": ("FLOAT", {"default": -float(2**31)}),
                 "max": ("FLOAT", {"default": float(2**31)}),
@@ -56,7 +56,7 @@ class BooleanInput:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "name": ("STRING", {"default": f"bool_{get_random_short_id()}"}),
+                "name": ("STRING", {"default": "bool_input"}),
                 "value": ("BOOLEAN", {"default": False}),
             }
         }
@@ -73,7 +73,7 @@ class StringInput:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "name": ("STRING", {"default": f"str_{get_random_short_id()}"}),
+                "name": ("STRING", {"default": "str_input"}),
                 "value": ("STRING", {"default": ""}),
             }
         }
@@ -100,7 +100,7 @@ class SaveImage:
                  "filename_prefix": ("STRING", {"default": "ComfyUI"}),
                 "output_name": (
                     "STRING",
-                    {"default": f"output_{get_random_short_id()}"},
+                    {"default": "output_input"},
                 ),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
@@ -243,10 +243,6 @@ class LoadImageFromURL:
         mode = 'RGBA' if mode == 'BGRA' else 'RGB'
         
         return Image.merge(mode, new_channels)
-
-def get_random_short_id():
-    alphabet = string.ascii_lowercase + string.digits
-    return "".join(random.choices(alphabet, k=8))
 
 
 FAL_INPUT_NODES = {
