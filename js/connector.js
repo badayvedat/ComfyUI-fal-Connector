@@ -1,7 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { $el } from "../../scripts/ui.js";
-import { getJSTemplate } from "./js_template.js";
 import { getDefaultWorkflow } from "./default_workflow.js";
 
 let processingQueue = false;
@@ -124,7 +123,6 @@ const registerFalConnectButton = async () => {
   falConnectButton.textContent = "Execute on fal";
   falConnectButton.style.background =
     "linear-gradient(90deg, #192A51 0%, #6B3E9B 50%, #0099FF 100%)";
-  falConnectButton.style.display = "inline-block";
   falConnectButton.style.color = "#fefefe";
 
   falConnectButton.onclick = () => queuePrompt();
@@ -203,15 +201,23 @@ const saveComfyPrompt = async (stringifiedJSCode) => {
   }, 0);
 };
 
+function gatito() {
+  const falFormatButton = document.getElementById('save-fal-format-button');
+  if (falFormatButton) {
+    falFormatButton.style.display = 'block';
+  } else {
+    console.error('FAL format button not found in the DOM');
+  }
+}
+
+
 const registerSaveFalFormatButton = async () => {
   const falFormatButton = document.createElement("button");
   falFormatButton.id = "save-fal-format-button";
   falFormatButton.textContent = "Show fal example";
   falFormatButton.style.background =
     "linear-gradient(90deg, #192A51 0%, #6B3E9B 50%, #0099FF 100%)";
-  falFormatButton.style.display = "inline-block";
   falFormatButton.style.color = "#fefefe";
-  falFormatButton.style.display = "block";
 
   const closeButton = app.ui.dialog.textElement.nextSibling;
   const saveButton = $el("button", {
@@ -248,16 +254,14 @@ const registerSaveFalFormatButton = async () => {
         };
       }
       const responseJSON = await response.json();
-      const jsTemplate = getJSTemplate(responseJSON);
-
-      await showSaveButton(jsTemplate);
+      await showSaveButton(responseJSON);
       app.ui.dialog.show(
         $el("div", {}, [
           $el("pre", {
             style: {
               color: "white",
             },
-            textContent: jsTemplate,
+            textContent: JSON.stringify(responseJSON, null, 2),
           }),
         ]),
       );
@@ -551,6 +555,8 @@ async function sendReadyMessage() {
 }
 
 async function addfalListeners() {
+  window.gatito = gatito;
+
   window.addEventListener("message", function (event) {
     if (event.data.type === "fal-set-workflow") {
       app.loadApiJson(event.data.data);
