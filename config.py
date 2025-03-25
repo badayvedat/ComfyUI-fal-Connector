@@ -46,6 +46,19 @@ def get_fal_api_key():
 
     return api_key
 
+def get_hf_token():
+    hf_token = os.environ.get("HF_TOKEN")
+    
+    if not hf_token:
+        try:
+            config = get_fal_config()
+            if "huggingface" in config:
+                hf_token = config["huggingface"].get("token")
+        except Exception as e:
+            print(f"Error reading HF token from config: {e}")
+    
+    return hf_token
+
 
 def set_fal_credentials():
     api_key = get_fal_api_key()
@@ -55,3 +68,8 @@ def set_fal_credentials():
     key_id, key_secret = api_key.split(":")
     os.environ["FAL_KEY_ID"] = key_id
     os.environ["FAL_KEY_SECRET"] = key_secret
+    
+    # Set HF token if available
+    hf_token = get_hf_token()
+    if hf_token:
+        os.environ["HF_TOKEN"] = hf_token
