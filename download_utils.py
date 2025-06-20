@@ -1,16 +1,14 @@
 import hashlib
 import os
 import re
-import shutil
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path, PurePath
 from urllib.parse import unquote, urlparse
 
-# copied from https://github.com/fal-ai/fal/blob/74783409d0bc777de549f6534ee3a64053d169b7/projects/fal/src/fal/toolkit/utils/download_utils.py#L13-L40
-class DownloadError(Exception):
-    pass
+TEMP_FILE_SUFFIX = ".tmp"
 
+# copied from https://github.com/fal-ai/fal/blob/74783409d0bc777de549f6534ee3a64053d169b7/projects/fal/src/fal/toolkit/utils/download_utils.py#L13-L40
 class DownloadError(Exception):
     pass
 
@@ -111,7 +109,11 @@ def download_url_to_file(
     if content_length is not None and len(content_length) > 0:
         file_size = int(content_length[0])
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        dir=os.path.dirname(dst),
+        suffix=TEMP_FILE_SUFFIX,
+    ) as temp_file:
         file_path = temp_file.name
         try:
             with tqdm(
@@ -128,12 +130,13 @@ def download_url_to_file(
                         f.write(chunk)
                         pbar.update(len(chunk))
 
-            # Move the file when the file is downloaded completely. Since the
-            # file used is temporary, in a case of an interruption, the downloaded
-            # content will be lost. So, it is safe to redownload the file in such cases.
-            shutil.move(file_path, dst)
-        except Exception as error:
-            raise error
+            # NOTE: Atomically renaming the file into place when the file is downloaded
+            # completely.
+            #
+            # Since the file used is temporary, in a case of an interruption, the
+            # downloaded content will be lost. So, it is safe to redownload the file in
+            # such cases.
+            os.rename(file_path, dst)
         finally:
             Path(temp_file.name).unlink(missing_ok=True)
 
@@ -174,7 +177,9 @@ def download_model_weights_fal(
 
     if weights_dir.exists() and not force:
         try:
-            weights_path = next(weights_dir.glob("*"))
+            weights_path = next(
+                wp for wp in weights_dir.glob("*") if wp.suffix != TEMP_FILE_SUFFIX
+            )
             is_safetensors_file(weights_path)
             return weights_path
 
