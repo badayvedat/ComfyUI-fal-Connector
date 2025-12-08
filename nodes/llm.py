@@ -10,7 +10,8 @@ import fal_client
 class FalAITextLLM:
     """
     Fal.AI Text LLM Node
-    Generates text using various LLM models from Fal.AI
+    Run any LLM (Large Language Model) with fal, powered by OpenRouter
+    Endpoint: openrouter/router
     """
 
     @classmethod
@@ -23,7 +24,7 @@ class FalAITextLLM:
                 }),
                 "prompt": ("STRING", {
                     "multiline": True,
-                    "default": "Tell me a short story about AI"
+                    "default": "Write a short story (under 200 words) about an AI that learns to dream. Use vivid sensory details and end with a surprising twist that makes the reader feel both awe and melancholy."
                 }),
                 "model": ([
                     "google/gemini-2.5-flash-lite",
@@ -91,7 +92,7 @@ class FalAITextLLM:
         temperature=0.7
     ):
         """
-        Generate text using Fal.AI Text LLM API
+        Generate text using Fal.AI OpenRouter API
         
         Args:
             fal_api_key: Fal.AI API key (REQUIRED - environment variables are ignored)
@@ -99,7 +100,7 @@ class FalAITextLLM:
             model: The LLM model to use
             system_prompt: System instructions for the model
             max_tokens: Maximum tokens to generate
-            temperature: Sampling temperature
+            temperature: Sampling temperature (0.0-2.0)
             
         Returns:
             Tuple containing the generated text
@@ -124,9 +125,9 @@ class FalAITextLLM:
                 "temperature": temperature,
             }
 
-            # Call the Fal.AI API
+            # Call the Fal.AI OpenRouter API
             result = fal_client.subscribe(
-                "fal-ai/any-llm",
+                "openrouter/router",
                 arguments=arguments
             )
 
@@ -157,7 +158,8 @@ class FalAITextLLM:
 class FalAIVisionLLM:
     """
     Fal.AI Vision LLM Node
-    Analyzes images and generates descriptions using vision-language models
+    Run any VLM (Vision Language Model) with fal
+    Endpoint: fal-ai/any-llm/vision (kept for backward compatibility)
     """
 
     @classmethod
@@ -171,7 +173,7 @@ class FalAIVisionLLM:
                 "image": ("IMAGE",),
                 "prompt": ("STRING", {
                     "multiline": True,
-                    "default": "Describe this image in detail"
+                    "default": "Caption this image for a text-to-image model with as much detail as possible."
                 }),
                 "model": ([
                     "google/gemini-2.5-flash-lite",
@@ -195,7 +197,7 @@ class FalAIVisionLLM:
                 }),
                 "system_prompt": ("STRING", {
                     "multiline": True,
-                    "default": "You are a helpful vision assistant."
+                    "default": "Only answer the question, do not provide any additional information or add any prefix/suffix other than the answer of the original question. Don't use markdown."
                 }),
             },
             "optional": {
@@ -204,6 +206,12 @@ class FalAIVisionLLM:
                     "min": 1,
                     "max": 4096,
                     "step": 1
+                }),
+                "temperature": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0.0,
+                    "max": 2.0,
+                    "step": 0.01
                 }),
             }
         }
@@ -243,10 +251,11 @@ class FalAIVisionLLM:
         prompt, 
         model, 
         system_prompt,
-        max_tokens=512
+        max_tokens=512,
+        temperature=1.0
     ):
         """
-        Analyze image using Fal.AI Vision LLM API
+        Analyze image using Fal.AI Vision API
         
         Args:
             fal_api_key: Fal.AI API key (REQUIRED - environment variables are ignored)
@@ -255,6 +264,7 @@ class FalAIVisionLLM:
             model: The vision-language model to use
             system_prompt: System instructions for the model
             max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature (0.0-2.0)
             
         Returns:
             Tuple containing the generated description
@@ -273,16 +283,17 @@ class FalAIVisionLLM:
             # Convert image to base64 data URI
             image_data_uri = self.tensor_to_base64(image)
 
-            # Prepare the request payload
+            # Prepare the request payload (keeping single image for compatibility)
             arguments = {
-                "image_url": image_data_uri,
+                "image_url": image_data_uri,  # Keep single image format for backward compatibility
                 "prompt": prompt,
                 "model": model,
                 "system_prompt": system_prompt,
                 "max_tokens": max_tokens,
+                "temperature": temperature,
             }
 
-            # Call the Fal.AI API
+            # Call the Fal.AI Vision API (keeping old endpoint for compatibility)
             result = fal_client.subscribe(
                 "fal-ai/any-llm/vision",
                 arguments=arguments
