@@ -253,8 +253,8 @@ def _truncate_filename(file_name: str, max_length: int = 200) -> str:
     max_name_length = max_length - len(ext) - len(hash_suffix) - 1  # 1 for separator
 
     if max_name_length <= 0:
-        # Extension alone consumes the budget; use hash as entire filename
-        return hash_suffix + ext[: max_length - len(hash_suffix)]
+        # Extension alone consumes the budget; trim the hash instead
+        return hash_suffix[: max_length - len(ext)] + ext
 
     truncated_name = name[:max_name_length] + "_" + hash_suffix
     return truncated_name + ext
