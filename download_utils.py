@@ -238,6 +238,28 @@ def _get_filename_from_content_disposition(cd: str | None) -> str | None:
     return unquote(filenames[0])
 
 
+def _truncate_filename(file_name: str, max_length: int = 200) -> str:
+    """Truncate a filename to fit within filesystem limits.
+
+    Preserves the file extension and replaces the excess stem with a hash
+    to avoid collisions. The default max_length of 200 leaves room for
+    temp file prefixes/suffixes added by NamedTemporaryFile.
+    """
+    if len(file_name) <= max_length:
+        return file_name
+
+    name, ext = os.path.splitext(file_name)
+    hash_suffix = _hash_url(file_name)[:16]
+    max_name_length = max_length - len(ext) - len(hash_suffix) - 1  # 1 for separator
+
+    if max_name_length <= 0:
+        # Extension alone consumes the budget; use hash as entire filename
+        return hash_suffix + ext[: max_length - len(hash_suffix)]
+
+    truncated_name = name[:max_name_length] + "_" + hash_suffix
+    return truncated_name + ext
+
+
 def _parse_filename(url: str, cd: str | None) -> str:
     url = url.strip()
     file_name = _get_filename_from_content_disposition(cd)
@@ -259,7 +281,7 @@ def _parse_filename(url: str, cd: str | None) -> str:
         if extension:
             file_name += extension
 
-    return file_name  # type: ignore
+    return _truncate_filename(file_name)
 
 
 def _get_remote_file_properties(
