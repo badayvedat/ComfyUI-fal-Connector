@@ -18,9 +18,9 @@ class IntegerInput:
             "required": {
                 "name": ("STRING", {"default": "int_input"}),
                 "number": ("INT", {"default": 0}),
-                "min": ("INT", {"default": -(2**31)}),
-                "max": ("INT", {"default": 2**31 - 1}),
-                "step": ("INT", {"default": 1}),
+                "min": ("INT", {"default": -(2**31), "min": -(10**12), "max": 10**12}),
+                "max": ("INT", {"default": 2**31 - 1, "min": -(10**12), "max": 10**12}),
+                "step": ("INT", {"default": 1, "min": 1, "max": 10**12}),
             }
         }
 
